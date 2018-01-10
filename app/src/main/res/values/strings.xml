@@ -1,13 +1,42 @@
 <resources>
     <string name="app_name">votar</string>
     <string name="action_settings">Settings</string>
-    <string name="password">Password</string>
-    <string name="sign_in">sign_in</string>
+    <!--MainActivivity-->
+
+    <string name="BotonIngresar">Ingresar</string>
+    <string name="BotonSaveNewPassWord">Almacenar Clave</string>
+    <string name="logo">logo</string>
+
+    <string name="asignacionConcejalMultiple">Tablet Asignada a Varios Concejales!!!</string>
+    <string name="asignacionConcejalSinAsignar">Tablet NO Asignada</string>
+    <string name="password">Clave</string>
+    <string name="passwordConfirmation">Confirmacion de Clave</string>
+
+
+    <string name="error_null_password">Clave Nula</string>
+    <string name="error_too_short_password">Clave Muy Corta</string>
+    <string name="error_password_iqual_default">Ingrese una clave distinta</string>
+    <string name="error_invalid_password">Clave incorrecta</string>
+    <string name="error_passwordDistintos">Las claves Ingresadas son diferentes</string>
+    <string name="error_incorrect_password">Clave Incorrecta</string>
+
+
+    <string name="passwor_configuracion">"pass"</string>
+    <string name="password_default_key">"password_default_key"</string>
+    <string name="password_default">"123abc"</string>
+
+    <!--//Dialogo supero la cantidad de intentos para el Login-->
+    <string name="password_Supero_Cantidad_Intentos_Titulo">"Supero la canitidad de Intentos."</string>
+    <string name="password_Supero_Cantidad_Intentos_Texto">"Contacte al Operador para asignar una nueva clave si no la recuerda"</string>
+    <string name="password_Supero_Cantidad_OK">"Ok"</string>
+
+
+
     <string name="title_activity_votacion">VotacionActivity</string>
     <string name="large_text">
-        "Material is the metaphor.\n\n"
+        "<b>Material is the metaphor.</b>\n\n"
 
-        "A material metaphor is the unifying theory of a rationalized space and a system of motion."
+       <i> "A material metaphor is the unifying theory of a rationalized space and a system of motion."
         "The material is grounded in tactile reality, inspired by the study of paper and ink, yet "
         "technologically advanced and open to imagination and magic.\n"
         "Surfaces and edges of the material provide visual cues that are grounded in reality. The "
@@ -17,8 +46,8 @@
         "The fundamentals of light, surface, and movement are key to conveying how objects move, "
         "interact, and exist in space and in relation to each other. Realistic lighting shows "
         "seams, divides space, and indicates moving parts.\n\n"
-
-        "Bold, graphic, intentional.\n\n"
+</i>
+        <u><b>"Bold, graphic, intentional.\n\n"</b>    </u>
 
         "The foundational elements of print based design typography, grids, space, scale, color, "
         "and use of imagery guide visual treatments. These elements do far more than please the "
@@ -97,14 +126,23 @@
 
     <!-- Strings related to Configuracion Activity -->
     <string name="mac">Mac</string>
-    <string name="concejal">Concejal</string>
-    <string name="action_sign_in">registrar</string>
-    <string name="action_sign_in_short">Sign in</string>
-    <string name="error_invalid_email">This email address is invalid</string>
-    <string name="error_invalid_password">This password is too short</string>
-    <string name="error_incorrect_password">This password is incorrect</string>
-    <string name="error_field_required">This field is required</string>
-    <string name="permission_rationale">"Contacts permissions are needed for providing email
-        completions."
-    </string>
+    <string name="imei">Imei</string>
+    <string name="Serie">Serie</string>
+    <string name="Dispositivo">Dispositivo</string>
+    <string name="ip">IP Base</string>
+    <string name="NombreBase">Nombre Base</string>
+    <string name="userBase">User Base</string>
+    <string name="PasswordBase">Password Base</string>
+    <string name="boton_registrarTablet">registrar Tablet</string>
+    <!--Referencias de Preferencias-->
+    <string name="boton_registrarBase">registrar Base</string>
+    <string name="preference_ip">com.ncodata.votar.ipbase</string>
+    <string name="preference_NombreBase">com.ncodata.votar.nombrebase</string>
+    <string name="preference_userBase">com.ncodata.votar.userbase</string>
+    <string name="preference_PasswordBase">com.ncodata.votar.passwordbase</string>
+    <string name="preference_ip_default">192.168.0.6</string>
+    <string name="preference_NombreBase_default">HCD</string>
+    <string name="preference_userBase_default">hcd</string>
+    <string name="preference_PasswordBase_default">d4k4r</string>
+
 </resources>

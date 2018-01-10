@@ -1,39 +1,47 @@
 package com.ncodata.votar;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
-import android.view.KeyEvent;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.inputmethod.EditorInfo;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ImageView;
+import android.widget.Toast;
 
-import java.net.NetworkInterface;
-import java.util.Collections;
-import java.util.List;
+import com.ncodata.votar.sql.ConnextionBD;
+import com.ncodata.votar.sql.InsertBD;
+
+import java.lang.reflect.Method;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+import static com.ncodata.votar.utils.SporteConf.getMacAddr;
 
 /**
  * A login screen that offers login via email/password.
  */
 //public class ConfiguracionActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
-public class ConfiguracionActivity extends AppCompatActivity  {
-
-    /**
-     * Id to identity READ_CONTACTS permission request.
-     */
-    private static final int REQUEST_READ_CONTACTS = 0;
+public class ConfiguracionActivity extends AppCompatActivity {
+    public static final String LOG_TAG = "ConfiguracionActivity";
+    Connection conn = null;//Conexion a la base de datos. Al entrar a la actividad nos conectamos y al salir nos desconectamos.
+    ConnextionBD connextionBD; //Tarea que se ejecuta en segundo plano para conseguir una conexion a la base
+    ConnextionBD.OnConnectionResult onConnectionResult;
+    private ImageView mIconoBaseConectada;
+    private ImageView mIconoBaseDesonectada;
 
     /**
      * A dummy authentication store containing known user names and passwords.
@@ -45,13 +53,22 @@ public class ConfiguracionActivity extends AppCompatActivity  {
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
-    private UserLoginTask mAuthTask = null;
+
 
     // UI references.
-    private AutoCompleteTextView mMacView;
-    private EditText mPasswordView;
+    private EditText mMac;
+    private EditText mImei;
+    private EditText mSerie;
+    private EditText mDispositivo;
+    private EditText mIp;
+    private EditText mNombreBase;
+    private EditText mUserBase;
+    private EditText mPasswordBase;
     private View mProgressView;
     private View mLoginFormView;
+
+
+    private static final int MY_PERMISSIONS_REQUEST_READ_PHONE_STATE = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,77 +76,163 @@ public class ConfiguracionActivity extends AppCompatActivity  {
         setContentView(R.layout.activity_configuracion);
         setupActionBar();
         // Set up the login form.
-        mMacView = (AutoCompleteTextView) findViewById(R.id.mac);
-        populateAutoComplete();
+        mMac = (EditText) findViewById(R.id.mac);
+        mImei = (EditText) findViewById(R.id.imei);
+        mSerie = (EditText) findViewById(R.id.serie);
+        mDispositivo = (EditText) findViewById(R.id.dispositivo);
+        mIp = (EditText) findViewById(R.id.ip);
+        mNombreBase = (EditText) findViewById(R.id.nombreBase);
+        mUserBase = (EditText) findViewById(R.id.userBase);
+        mPasswordBase = (EditText) findViewById(R.id.passwordBase);
 
-        mPasswordView = (EditText) findViewById(R.id.password);
-        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+//        mPasswordView = (EditText) findViewById(R.id.password);
+//        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+//            @Override
+//            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
+//                if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
+//                    attemptLogin();
+//                    return true;
+//                }
+//                return false;
+//            }
+//        });
+
+        mIconoBaseConectada = (ImageView) findViewById(R.id.inconoBaseConectada);
+        mIconoBaseDesonectada = (ImageView) findViewById(R.id.inconoBaseDesonectada);
+
+        Button mBotonRegistrarTablet = (Button) findViewById(R.id.botonRegistarTablet);
+        mBotonRegistrarTablet.setOnClickListener(new OnClickListener() {
             @Override
-            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
-                    return true;
-                }
-                return false;
+            public void onClick(View view) {
+                registar();
             }
         });
 
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
-        mEmailSignInButton.setOnClickListener(new OnClickListener() {
+        Button mBotonRegistrarBase = (Button) findViewById(R.id.botonRegistarBase);
+        mBotonRegistrarBase.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptLogin();
+                SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString(getString(R.string.preference_ip), mIp.getText().toString());
+                editor.putString(getString(R.string.preference_NombreBase), mNombreBase.getText().toString());
+                editor.putString(getString(R.string.preference_userBase), mUserBase.getText().toString());
+                editor.putString(getString(R.string.preference_PasswordBase), mPasswordBase.getText().toString());
+                editor.commit();
             }
         });
 
         mLoginFormView = findViewById(R.id.registo_form);
         mProgressView = findViewById(R.id.registro_progress);
+
+
+        SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(getString(R.string.password_default_key), getString(R.string.password_default));
+        editor.commit();
+
+
+
+        onConnectionResult = new ConnextionBD.OnConnectionResult() {
+            @Override
+            public void onResultSuccess(final Connection connection) {
+                Log.d(LOG_TAG, " onResultSuccess( " + connection.toString());
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        if (connection != null) {
+                            conn = connection;
+                            mIconoBaseConectada.setVisibility(View.VISIBLE);
+                            mIconoBaseDesonectada.setVisibility(View.GONE);
+                        }
+
+                    }
+                });
+
+
+            }
+
+            @Override
+            public void onResultFail(final String errorMessage) {
+                Log.d(LOG_TAG, " onResultFail " + errorMessage);
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Log.d(LOG_TAG, " onResultFail runable" + errorMessage);
+                        Toast.makeText(getApplicationContext(), "Error:" + errorMessage, Toast.LENGTH_LONG).show();
+                        mIconoBaseConectada.setVisibility(View.GONE);
+                        mIconoBaseDesonectada.setVisibility(View.VISIBLE);
+                    }
+                });
+
+
+            }
+        };
+
+        populateAutoComplete();
+        loadIMEI();
+
+
     }
 
     private void populateAutoComplete() {
-        mMacView.setText(getMacAddr());
+        mMac.setText(getMacAddr());
+        String serial_no = null;
 
-//        if (!mayRequestContacts()) {
-//            return;
-//        }
+        try {
+            Class<?> c = Class.forName("android.os.SystemProperties");
+            Method get = c.getMethod("get", String.class);
+            serial_no = (String) get.invoke(c, "ro.serialno");
+            System.out.println("Device serial ID : " + serial_no);
+            mSerie.setText(serial_no);
+        } catch (Exception e) {
+            System.out.println("Some error occured : " + e.getMessage());
+            mSerie.setText("error");
+        }
 
-//        getLoaderManager().initLoader(0, null, this);
+        SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+       mIp.setText(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
+       mNombreBase.setText(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
+       mUserBase.setText(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
+       mPasswordBase.setText(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
+
     }
 
-//    private boolean mayRequestContacts() {
-//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-//            return true;
-//        }
-//        if (checkSelfPermission(READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-//            return true;
-//        }
-//        if (shouldShowRequestPermissionRationale(READ_CONTACTS)) {
-//            Snackbar.make(mEmailView, R.string.permission_rationale, Snackbar.LENGTH_INDEFINITE)
-//                    .setAction(android.R.string.ok, new View.OnClickListener() {
-//                        @Override
-//                        @TargetApi(Build.VERSION_CODES.M)
-//                        public void onClick(View v) {
-//                            requestPermissions(new String[]{READ_CONTACTS}, REQUEST_READ_CONTACTS);
-//                        }
-//                    });
-//        } else {
-//            requestPermissions(new String[]{READ_CONTACTS}, REQUEST_READ_CONTACTS);
-//        }
-//        return false;
-//    }
 
-    /**
-     * Callback received when a permissions request has been completed.
-     */
+
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        if (requestCode == REQUEST_READ_CONTACTS) {
-            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                populateAutoComplete();
+    protected void onResume() {
+        Log.d(LOG_TAG, " onResume ");
+        if (conn == null) {
+            Log.d(LOG_TAG, " onResume conn null");
+            connextionBD = new ConnextionBD();
+            connextionBD.setOnResultListener(onConnectionResult);
+            SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+            String ip=(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
+            String nombreBase=(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
+            String userBase=(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
+            String passwordBase=(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
+            connextionBD.setDatabase(ip,nombreBase,userBase,passwordBase);
+            connextionBD.execute();
+        }
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(LOG_TAG, " onpause() ");
+        if (conn != null) {
+            try {
+                conn.close();
+                conn = null;
+                Log.d(LOG_TAG, " onpause() Close connection");
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " onpause() Close exception" + e.getMessage());
+
             }
         }
+        super.onPause();
     }
+
+
 
     /**
      * Set up the {@link android.app.ActionBar}, if the API is available.
@@ -142,67 +245,7 @@ public class ConfiguracionActivity extends AppCompatActivity  {
         }
     }
 
-    /**
-     * Attempts to sign in or register the account specified by the login form.
-     * If there are form errors (invalid email, missing fields, etc.), the
-     * errors are presented and no actual login attempt is made.
-     */
-    private void attemptLogin() {
-        if (mAuthTask != null) {
-            return;
-        }
 
-        // Reset errors.
-        mMacView.setError(null);
-        mPasswordView.setError(null);
-
-        // Store values at the time of the login attempt.
-        String mac = mMacView.getText().toString();
-        String password = mPasswordView.getText().toString();
-
-        boolean cancel = false;
-        View focusView = null;
-
-        // Check for a valid password, if the user entered one.
-        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-            mPasswordView.setError(getString(R.string.error_invalid_password));
-            focusView = mPasswordView;
-            cancel = true;
-        }
-
-        // Check for a valid email address.
-        if (TextUtils.isEmpty(mac)) {
-            mMacView.setError(getString(R.string.error_field_required));
-            focusView = mMacView;
-            cancel = true;
-        } else if (!isEmailValid(mac)) {
-            mMacView.setError(getString(R.string.error_invalid_email));
-            focusView = mMacView;
-            cancel = true;
-        }
-
-        if (cancel) {
-            // There was an error; don't attempt login and focus the first
-            // form field with an error.
-            focusView.requestFocus();
-        } else {
-            // Show a progress spinner, and kick off a background task to
-            // perform the user login attempt.
-            showProgress(true);
-            mAuthTask = new UserLoginTask(mac, password);
-            mAuthTask.execute((Void) null);
-        }
-    }
-
-    private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
-    }
-
-    private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
-        return password.length() > 4;
-    }
 
     /**
      * Shows the progress UI and hides the login form.
@@ -241,140 +284,107 @@ public class ConfiguracionActivity extends AppCompatActivity  {
     }
 
 
-    public static String getMacAddr() {
-        try {
-            List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface nif : all) {
-                if (!nif.getName().equalsIgnoreCase("wlan0")) continue;
-
-                byte[] macBytes = nif.getHardwareAddress();
-                if (macBytes == null) {
-                    return "";
-                }
-
-                StringBuilder res1 = new StringBuilder();
-                for (byte b : macBytes) {
-                    res1.append(Integer.toHexString(b & 0xFF) + ":");
-                }
-
-                if (res1.length() > 0) {
-                    res1.deleteCharAt(res1.length() - 1);
-                }
-                return res1.toString();
-            }
-        } catch (Exception ex) {
-        }
-        return "02:00:00:00:00:00";
-    }
-
-//    @Override
-//    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-//        return new CursorLoader(this,
-//                // Retrieve data rows for the device user's 'profile' contact.
-//                Uri.withAppendedPath(ContactsContract.Profile.CONTENT_URI,
-//                        ContactsContract.Contacts.Data.CONTENT_DIRECTORY), ProfileQuery.PROJECTION,
-//
-//                // Select only email addresses.
-//                ContactsContract.Contacts.Data.MIMETYPE +
-//                        " = ?", new String[]{ContactsContract.CommonDataKinds.Email
-//                .CONTENT_ITEM_TYPE},
-//
-//                // Show primary email addresses first. Note that there won't be
-//                // a primary email address if the user hasn't specified one.
-//                ContactsContract.Contacts.Data.IS_PRIMARY + " DESC");
-//    }
-//
-//    @Override
-//    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-//        List<String> emails = new ArrayList<>();
-//        cursor.moveToFirst();
-//        while (!cursor.isAfterLast()) {
-//            emails.add(cursor.getString(ProfileQuery.ADDRESS));
-//            cursor.moveToNext();
-//        }
-//
-//        addEmailsToAutoComplete(emails);
-//    }
-//
-//    @Override
-//    public void onLoaderReset(Loader<Cursor> cursorLoader) {
-//
-//    }
-//
-//    private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
-//        //Create adapter to tell the AutoCompleteTextView what to show in its dropdown list.
-//        ArrayAdapter<String> adapter =
-//                new ArrayAdapter<>(ConfiguracionActivity.this,
-//                        android.R.layout.simple_dropdown_item_1line, emailAddressCollection);
-//
-//        mEmailView.setAdapter(adapter);
-//    }
 
 
-    private interface ProfileQuery {
-        String[] PROJECTION = {
-                ContactsContract.CommonDataKinds.Email.ADDRESS,
-                ContactsContract.CommonDataKinds.Email.IS_PRIMARY,
-        };
 
-        int ADDRESS = 0;
-        int IS_PRIMARY = 1;
-    }
+    public void registar() {
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
-        private final String mEmail;
-        private final String mPassword;
-
-        UserLoginTask(String email, String password) {
-            mEmail = email;
-            mPassword = password;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-
+        if(conn!=null){
             try {
-                // Simulate network access.
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                return false;
+                PreparedStatement pst = conn.prepareStatement("insert into age_Dispositivos "
+                        + "(NumDispositivo,Dispositivo, Serie, Imei, Macaddresses, Estado)"
+                        + "values (?,?,?,?,?,?)");
+
+
+                Log.d(LOG_TAG, " agregarDato-connection:" + conn.toString());
+                Log.d(LOG_TAG, " agregarDato-imei:" + mImei.getText().toString());
+                pst.setString(1, "2");
+                pst.setString(2, mDispositivo.getText().toString());
+
+                pst.setString(3, mSerie.getText().toString());
+                pst.setString(4, mImei.getText().toString());
+                pst.setString(5, getMacAddr());
+                pst.setBoolean(6, true);
+                Log.d(LOG_TAG, " pst.executeUpdate:");
+                InsertBD insertBD=new InsertBD();
+                InsertBD.OnInsertResult onInsertResult;
+                onInsertResult= new InsertBD.OnInsertResult() {
+                    @Override
+                    public void onResultSuccess(String msg) {
+                        Log.d(LOG_TAG, " executeUpdate success: "+msg);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "agregarDato correctamente", Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(String errorMessage) {
+                        Log.d(LOG_TAG, " executeUpdate onResultFail: "+errorMessage);
+                    }
+                };
+                insertBD.setOnResultListener(onInsertResult);
+                insertBD.execute(pst);
+
+
+
+
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " agregarDato error " + e.toString());
+                Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
+
             }
 
-            for (String credential : DUMMY_CREDENTIALS) {
-                String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
-                    // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
-                }
-            }
-
-            // TODO: register the new account here.
-            return true;
         }
+    }
 
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            mAuthTask = null;
-            showProgress(false);
-
-            if (success) {
-                finish();
+    public void loadIMEI() {
+        // Check if the READ_PHONE_STATE permission is already available.
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_PHONE_STATE)) {
+//                get_imei_data();
             } else {
-                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                mPasswordView.requestFocus();
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE},
+                        MY_PERMISSIONS_REQUEST_READ_PHONE_STATE);
             }
-        }
+        } else {
 
-        @Override
-        protected void onCancelled() {
-            mAuthTask = null;
-            showProgress(false);
+            TelephonyManager mngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            mImei.setText(mngr.getDeviceId());
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == MY_PERMISSIONS_REQUEST_READ_PHONE_STATE) {
+
+            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+
+                TelephonyManager mngr = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                mImei.setText(mngr.getDeviceId());
+
+
+            } else {
+//                Toast.makeText(this, "ehgehfg", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
