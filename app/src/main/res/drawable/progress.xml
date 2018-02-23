@@ -18,6 +18,9 @@ android:toDegrees="360" >
     android:shape="ring"
     android:thicknessRatio="8"
     android:useLevel="false" >
+    <stroke android:width="8px"
+        android:color="@color/color_BotonIngresar_start" />
+
     <size
         android:height="48dip"
         android:width="48dip" />

@@ -6,9 +6,9 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.StrictMode;
+import android.support.annotation.RequiresApi;
 import android.support.design.widget.CollapsingToolbarLayout;
-import android.support.design.widget.FloatingActionButton;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -23,17 +24,17 @@ import android.widget.Toast;
 
 import com.ncodata.votar.sql.ConnextionBD;
 import com.ncodata.votar.sql.InsertBD;
+import com.ncodata.votar.sql.QueryBD;
+import com.ncodata.votar.sql.UpdateBD;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import static com.ncodata.votar.utils.SporteConf.getMacAddr;
 
-public class VotacionActivity extends AppCompatActivity  {
+public class VotacionActivity extends AppCompatActivity {
     public static final String LOG_TAG = "VotacionActivity";
 
     Connection conn = null;//Conexion a la base de datos. Al entrar a la actividad nos conectamos y al salir nos desconectamos.
@@ -42,121 +43,251 @@ public class VotacionActivity extends AppCompatActivity  {
     private ImageView mIconoBaseConectada;
     private ImageView mIconoBaseDesonectada;
 
-    public static final int VOTO_NEGATIVO=0;
-    public static final int VOTO_POSITIVO=1;
-    public static final int VOTO_ABSTENCION=2;
+    public static final int VOTO_NEGATIVO = 0;
+    public static final int VOTO_POSITIVO = 1;
+    public static final int VOTO_ABSTENCION = 2;
 
     private ProgressBar pbarProgreso;
-    private MiTareaAsincrona mTarea1;
+    private NestedScrollView mNestedSecrollViewVotacion;
+    private TimerTask mTareaTimer;
+    private Long mtiempoInicioVotacion;
     private InspectorBanderas mInspectorBanderas;
     private TextView mTextTimerVotacion;
     private TextView mTextParrafo;
     private TextView mVotoSeleccionado;
-    private  Toolbar toolbar;
+    private Toolbar toolbar;
     private CollapsingToolbarLayout collapsingToolbarLayout;
-    private FloatingActionButton mFabPositivo;
-    private FloatingActionButton mFabNegativo;
+    private Button mVotoPositivo;
+    private Button mVotoNegativo;
+    private Button mConfirmaVotoPositivo;
+    private Button mConfirmaVotoNegativo;
+    private Button mCancelarVoto;
+    private String mMac;
+    private int mTiempoVotacion=0;
+    private int mTratamientoAbstencion=2;// Es 0: voto negativo, 1: Voto Positivo, 2: abstencion
+    private Boolean mActualizandoDatosTimerVoto=false;
+    private Boolean mActualizandoDatosTextos=false;
+    private Boolean mTextosInicializados=false;
+    private Boolean mApagar=false;
+    private String mConcejal="";
+    private TextView mTextConcejal;
+    View decorView;
 
-
-
-
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_votacion);
-         toolbar = (Toolbar) findViewById(R.id.toolbar);
-        collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
+        Intent intent = getIntent();
+        mConcejal=intent.getStringExtra("concejal");
 
+        setContentView(R.layout.activity_votacion);
+//        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
+//        getActionBar().hide();
+
+//        if (Build.VERSION.SDK_INT < 16) {
+//            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+//                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//        }
+
+
+
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
         toolbar.setTitle("titulo");
         toolbar.setSubtitle("sub t");
-        setSupportActionBar(toolbar);
 
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mIconoBaseConectada = (ImageView) findViewById(R.id.inconoBaseConectada);
         mIconoBaseDesonectada = (ImageView) findViewById(R.id.inconoBaseDesonectada);
+        mTextConcejal=(TextView)findViewById(R.id.concejal);
+        mTextConcejal.setText(mConcejal);
 
-        mFabPositivo = (FloatingActionButton) findViewById(R.id.fabPositivo);
-        mFabNegativo = (FloatingActionButton) findViewById(R.id.fabNegativo);
-        mFabPositivo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mTarea1 !=null) {
-                    mTarea1.cancel(true);
-
-                }
-//                Snackbar.make(view, "Voto Positivo", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-                Animation animation1 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votoseleccionado);
-                Animation animation2 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votonoseleccionado);
-
-                Animation animation3 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.cartelvotosemitido);
-                mFabPositivo.startAnimation(animation1);
-
-                mFabNegativo.startAnimation(animation2);
-                mVotoSeleccionado.setText("VOTO POSITIVO");
-                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo) ));
-                mVotoSeleccionado.startAnimation(animation3);
-                mFabPositivo.setVisibility(View.GONE);
-                mFabNegativo.setVisibility(View.GONE);
-                votar(VOTO_POSITIVO);
-            }
-        });
-
-        mFabNegativo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mTarea1 !=null) {
-                    mTarea1.cancel(true);
-
-                }
-//                Snackbar.make(view, "Voto Negativo", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-
-                Animation animation1 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votoseleccionado);
-                Animation animation2 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votonoseleccionado);
-
-                Animation animation3 =
-                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.cartelvotosemitido);
-                mFabPositivo.startAnimation(animation2);
-
-                mFabNegativo.startAnimation(animation1);
-
-                mVotoSeleccionado.setText("VOTO NEGATIVO");
-                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo) ));
-                mVotoSeleccionado.startAnimation(animation3);
-                votar(VOTO_NEGATIVO);
-                mFabPositivo.setVisibility(View.GONE);
-                mFabNegativo.setVisibility(View.GONE);
-                sacarConcejalEnSesion();
-
-            }
-        });
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        mFabPositivo.setVisibility(View.GONE);
-        mFabNegativo.setVisibility(View.GONE);
+        mNestedSecrollViewVotacion = (NestedScrollView) findViewById(R.id.nestedSecrollViewVotacion);
 
 
-        pbarProgreso = (ProgressBar)findViewById(R.id.pbarProgreso);
-        mTextTimerVotacion = (TextView)findViewById(R.id.textView);
+
+
+
+
+
+        pbarProgreso = (ProgressBar) findViewById(R.id.pbarProgreso);
+        mTextTimerVotacion = (TextView) findViewById(R.id.textTimer);
         pbarProgreso.setVisibility(View.GONE);
         mTextTimerVotacion.setVisibility(View.GONE);
 
-        mTextParrafo = (TextView)findViewById(R.id.textoParrafo);
-        mVotoSeleccionado = (TextView)findViewById(R.id.votoSeleccionado);
+
+
+        mTextParrafo = (TextView) findViewById(R.id.textoParrafo);
+        mVotoSeleccionado = (TextView) findViewById(R.id.votoSeleccionado);
+        mVotoSeleccionado.setVisibility(View.GONE);
+
+        mVotoPositivo= (Button) findViewById(R.id.VotoPositivo);
+        mVotoNegativo = (Button) findViewById(R.id.VotoNegativo);
+        mConfirmaVotoPositivo = (Button) findViewById(R.id.confirmaVotoPositivo);
+        mConfirmaVotoNegativo = (Button) findViewById(R.id.confirmaVotoNegativo);
+        mCancelarVoto = (Button) findViewById(R.id.cancelarVoto);
+
+
+        mVotoPositivo.setVisibility(View.GONE);
+        mVotoNegativo.setVisibility(View.GONE);
+        mConfirmaVotoNegativo.setVisibility(View.GONE);
+        mConfirmaVotoPositivo.setVisibility(View.GONE);
+        mCancelarVoto.setVisibility(View.GONE);
+
+        mVotoPositivo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Animation animationVotoPositivo =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votoseleccionado);
+                Animation showConfirmacion =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.showconfirmarvoto);
+
+                Animation animacionhideBoton =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.hide_boton_votacion);
+
+
+                mVotoPositivo.startAnimation(animationVotoPositivo);
+                mVotoNegativo.startAnimation(animacionhideBoton);
+                mConfirmaVotoPositivo.startAnimation(showConfirmacion);
+
+
+
+
+                mVotoNegativo.setVisibility(View.GONE);
+                mVotoPositivo.setVisibility(View.GONE);
+                mConfirmaVotoPositivo.setVisibility(View.VISIBLE);
+                mCancelarVoto.setVisibility(View.VISIBLE);
+
+
+            }
+        });
+
+        mConfirmaVotoPositivo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mTareaTimer != null) {
+                    mTareaTimer.cancel(true);
+
+                }
+
+
+                Animation hideConfirmacion =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.hide_boton_votacion);
+
+                Animation animacionShowVotoSeleccionado =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.showconfirmarvoto);
+
+
+
+                mConfirmaVotoPositivo.startAnimation(hideConfirmacion);
+
+
+                mVotoSeleccionado.setText(getText(R.string.texto_Voto_Positivo));
+                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+                mVotoSeleccionado.startAnimation(animacionShowVotoSeleccionado);
+                mVotoSeleccionado.setVisibility(View.VISIBLE);
+
+                votar(VOTO_POSITIVO);
+
+                mTextTimerVotacion.setVisibility(View.GONE);
+                pbarProgreso.setVisibility(View.GONE);
+                mConfirmaVotoPositivo.setVisibility(View.GONE);
+                mCancelarVoto.setVisibility(View.GONE);
+
+
+            }
+        });
+
+
+
+        mVotoNegativo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Animation animationVotoNegativo =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.votoseleccionado);
+                Animation showConfirmacion =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.showconfirmarvoto);
+
+                Animation animacionhideBoton =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.hide_boton_votacion);
+
+
+                mVotoNegativo.startAnimation(animationVotoNegativo);
+                mVotoPositivo.startAnimation(animacionhideBoton);
+                mConfirmaVotoNegativo.startAnimation(showConfirmacion);
+
+                mVotoNegativo.setVisibility(View.GONE);
+                mVotoPositivo.setVisibility(View.GONE);
+                mConfirmaVotoNegativo.setVisibility(View.VISIBLE);
+                mCancelarVoto.setVisibility(View.VISIBLE);
+
+
+            }
+        });
+
+        mConfirmaVotoNegativo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mTareaTimer != null) {
+                    mTareaTimer.cancel(true);
+
+                }
+
+
+                Animation hideConfirmacion =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.hide_boton_votacion);
+
+                Animation animacionShowVotoSeleccionado =
+                        AnimationUtils.loadAnimation(getApplicationContext(), R.anim.cartelvotosemitido);
+
+
+
+                mConfirmaVotoNegativo.startAnimation(hideConfirmacion);
+
+
+                mVotoSeleccionado.setText(getText(R.string.texto_Voto_Negativo));
+                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
+                mVotoSeleccionado.startAnimation(animacionShowVotoSeleccionado);
+                mVotoSeleccionado.setVisibility(View.VISIBLE);
+
+                votar(VOTO_NEGATIVO);
+
+                mTextTimerVotacion.setVisibility(View.GONE);
+                pbarProgreso.setVisibility(View.GONE);
+                mConfirmaVotoNegativo.setVisibility(View.GONE);
+                mCancelarVoto.setVisibility(View.GONE);
+
+
+            }
+        });
+
+mCancelarVoto.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View view) {
+        mCancelarVoto.setVisibility(View.GONE);
+        mConfirmaVotoPositivo.setVisibility(View.GONE);
+        mConfirmaVotoNegativo.setVisibility(View.GONE);
+        mVotoPositivo.setVisibility(View.VISIBLE);
+        mVotoNegativo.setVisibility(View.VISIBLE);
+        mVotoSeleccionado.setVisibility(View.GONE);
+    }
+});
+
+
         onConnectionResult = new ConnextionBD.OnConnectionResult() {
             @Override
             public void onResultSuccess(final Connection connection) {
-                Log.d(LOG_TAG, " onResultSuccess( " + connection.toString());
+                Log.d(LOG_TAG, " onResult Success task " + connection.toString());
                 runOnUiThread(new Runnable() {
                     public void run() {
                         if (connection != null) {
                             conn = connection;
                             mIconoBaseConectada.setVisibility(View.VISIBLE);
                             mIconoBaseDesonectada.setVisibility(View.GONE);
+                            leerParametros();
                         }
 
                     }
@@ -167,10 +298,10 @@ public class VotacionActivity extends AppCompatActivity  {
 
             @Override
             public void onResultFail(final String errorMessage) {
-                Log.d(LOG_TAG, " onResultFail " + errorMessage);
+                Log.d(LOG_TAG, " onResult Fail task " + errorMessage);
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        Log.d(LOG_TAG, " onResultFail runable" + errorMessage);
+                        Log.d(LOG_TAG, " onResult Fail runable" + errorMessage);
                         Toast.makeText(getApplicationContext(), "Error:" + errorMessage, Toast.LENGTH_LONG).show();
                         mIconoBaseConectada.setVisibility(View.GONE);
                         mIconoBaseDesonectada.setVisibility(View.VISIBLE);
@@ -180,51 +311,7 @@ public class VotacionActivity extends AppCompatActivity  {
 
             }
         };
-
-    }
-
-
-    @Override
-    protected void onResume() {
-        Log.d(LOG_TAG, " onResume ");
-        if (conn == null) {
-            Log.d(LOG_TAG, " onResume conn null");
-            connextionBD = new ConnextionBD();
-            connextionBD.setOnResultListener(onConnectionResult);
-            SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
-            String ip=(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
-            String nombreBase=(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
-            String userBase=(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
-            String passwordBase=(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
-            connextionBD.setDatabase(ip,nombreBase,userBase,passwordBase);
-            connextionBD.execute();
-        }
-        super.onResume();
-    }
-
-    @Override
-    protected void onPause() {
-        Log.d(LOG_TAG, " onpause() ");
-        if (conn != null) {
-            try {
-                conn.close();
-                conn = null;
-                Log.d(LOG_TAG, " onpause() Close connection");
-            } catch (SQLException e) {
-                Log.d(LOG_TAG, " onpause() Close exception" + e.getMessage());
-
-            }
-        }
-        super.onPause();
-    }
-
-
-
-
-    @Override
-    protected void onPostResume() {
-        Log.d(LOG_TAG, "task onPostResume()");
-        super.onPostResume();
+        mMac = getMacAddr();
     }
 
     @Override
@@ -236,8 +323,134 @@ public class VotacionActivity extends AppCompatActivity  {
     }
 
     @Override
+    protected void onResume() {
+        Log.d(LOG_TAG, "task onResume ");
+
+        if (conn == null) {
+            Log.d(LOG_TAG, " onResume conn null");
+
+            connextionBD = new ConnextionBD();
+            SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+            String ip = (sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
+            String nombreBase = (sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
+            String userBase = (sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
+            String passwordBase = (sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
+            connextionBD.setDatabase(ip, nombreBase, userBase, passwordBase);
+            connextionBD.setOnResultListener(onConnectionResult);
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                connextionBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            } else {
+                connextionBD.execute();
+            }
+
+
+        } else {
+            Log.d(LOG_TAG, " onResume conn existe");
+        }
+        super.onResume();
+    }
+
+
+    @Override
+    protected void onPostResume() {
+        Log.d(LOG_TAG, "task onPostResume()");
+
+        super.onPostResume();
+    }
+
+    @Override
+    protected void onPause() {
+        Log.d(LOG_TAG, " task onpause() ");
+        if (conn != null) {
+            Log.d(LOG_TAG, "task onpause() conn " + conn.toString());
+            sacarConcejalEnSesion();
+        } else {
+            Log.d(LOG_TAG, "task onpause() conn null");
+        }
+//        if (conn != null) {
+//            try {
+//                conn.close();
+//                conn = null;
+//                Log.d(LOG_TAG, " onpause() Close connection");
+//            } catch (SQLException e) {
+//                Log.d(LOG_TAG, " onpause() Close exception" + e.getMessage());
+//
+//            }
+//        }
+        super.onPause();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        Log.d(LOG_TAG, " onSystemUiVisibilityChange  onWindowFocusChanged" );
+        decorView = getWindow().getDecorView();
+// Hide both the navigation bar and the status bar.
+// SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
+// a general rule, you should design your app to hide the status bar whenever you
+// hide the navigation bar.
+        int uiOptions =     (
+//                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION   |
+                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | // hide nav bar
+                 View.SYSTEM_UI_FLAG_FULLSCREEN |// hide status bar
+                 View.SYSTEM_UI_FLAG_IMMERSIVE);
+
+//        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+//                View.SYSTEM_UI_FLAG_FULLSCREEN |
+//                View.SYSTEM_UI_FLAG_IMMERSIVE
+
+//        int uiOptions =  View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+//                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+//                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        decorView.setSystemUiVisibility(uiOptions );
+        decorView.setOnSystemUiVisibilityChangeListener
+                (new View.OnSystemUiVisibilityChangeListener() {
+                    @Override
+                    public void onSystemUiVisibilityChange(int visibility) {
+                        Log.d(LOG_TAG, " onSystemUiVisibilityChange " );
+                        // Note that system bars will only be "visible" if none of the
+                        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
+                        // adjustments to your UI, such as showing the action bar or
+                        // other navigational controls.
+                        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                            // TODO: The system bars are visible. Make any desired
+                            Log.d(LOG_TAG, " onSystemUiVisibilityChange View.SYSTEM_UI_FLAG_FULLSCREE" );
+
+// Hide both the navigation bar and the status bar.
+// SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
+// a general rule, you should design your app to hide the status bar whenever you
+// hide the navigation bar.
+                            int uiOptions1 = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+//                                    | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+                            decorView.setSystemUiVisibility(uiOptions1);
+
+                        } else {
+                            Log.d(LOG_TAG, " onSystemUiVisibilityChange View.SYSTEM_UI_FLAG_FULLSCREE NOT" );
+                            // TODO: The system bars are NOT visible. Make any desired
+
+                            // adjustments to your UI, such as hiding the action bar or
+                            // other navigational controls.
+
+                        }
+                    }
+                });
+
+        super.onWindowFocusChanged(hasFocus);
+    }
+
+    @Override
     protected void onStop() {
         Log.d(LOG_TAG, "task onStop()");
+        if (conn != null) {
+            Log.d(LOG_TAG, "task onStop conn " + conn.toString());
+            sacarConcejalEnSesion();
+        } else {
+            Log.d(LOG_TAG, "task onStop conn null");
+        }
         super.onStop();
     }
 
@@ -245,51 +458,77 @@ public class VotacionActivity extends AppCompatActivity  {
     protected void onDestroy() {
 
         Log.d(LOG_TAG, "task onDestroy");
-        if(mInspectorBanderas!=null){
+        if (mInspectorBanderas != null) {
             mInspectorBanderas.cancel(true);
         }
-        if(mTarea1!=null){
-            mTarea1.cancel(true);
+        if (mTareaTimer != null) {
+            mTareaTimer.cancel(true);
+        }
+        if (conn != null) {
+            Log.d(LOG_TAG, "task onDestroy con " + conn.toString());
+            sacarConcejalEnSesion();
+        } else {
+            Log.d(LOG_TAG, "task onDestroy conn null");
         }
         super.onDestroy();
     }
 
-    private void tareaLarga()
-    {
+    private void timer() {
         try {
             Thread.sleep(1000);
-        } catch(InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
     }
 
 
-    private class MiTareaAsincrona extends AsyncTask<Void, Integer, Boolean> {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(LOG_TAG, "task onActivityResult");
+        Log.d(LOG_TAG, "task requestCode: "+requestCode);
+        Log.d(LOG_TAG, "task resultCode: " +resultCode);
+        Log.d(LOG_TAG, "task data: " +data.toString());
+
+        switch(resultCode)
+        {
+
+//            case RESULT_CLOSE_ALL:
+//                setResult(RESULT_CLOSE_ALL);
+//                finish();
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private class TimerTask extends AsyncTask<Integer, Integer, Boolean> {
 
         @Override
-        protected Boolean doInBackground(Void... params) {
-            Log.d(LOG_TAG, "MiTareaAsincrona doInBackground");
-            for(int i=9; i>=0; i--) {
+        protected Boolean doInBackground(Integer... params) {
+            Log.d(LOG_TAG, "TimerTask doInBackground");
+            Boolean grabaAbstencion = true;
+            int tiempoTotal = params[0].intValue();
+            for (int i = tiempoTotal; i >= 0; i--) {
 
-                Log.d(LOG_TAG, "MiTareaAsincrona i: "+i);
-                tareaLarga();
+                Log.d(LOG_TAG, "TimerTask i: " + i);
+                timer();
 
                 publishProgress(i);
 
-                if(isCancelled()){
-                    return false; // este valor pasa a onPostExecute
-
+                if (isCancelled()) {
+                    // este valor pasa a onPostExecute y no graba el vota por abstenciòn
+                    grabaAbstencion = false;
+                    break;
                 }
             }
-//
-            return true;
+
+            return grabaAbstencion;//Cuando termina la Tarea se graba la abstención.
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
 
             int progreso = values[0].intValue();
-            Log.d(LOG_TAG, "MiTareaAsincrona onProgressUpdate: "+progreso);
+            Log.d(LOG_TAG, "MiTareaAsincrona onProgressUpdate: " + progreso);
             mTextTimerVotacion.setText(String.valueOf(progreso));
-            pbarProgreso.setProgress(progreso*10);
+            pbarProgreso.setProgress(progreso);
         }
 
         @Override
@@ -297,9 +536,9 @@ public class VotacionActivity extends AppCompatActivity  {
             Log.d(LOG_TAG, "MiTareaAsincrona onPreExecute(): ");
             pbarProgreso.setVisibility(View.VISIBLE);
             mTextTimerVotacion.setVisibility(View.VISIBLE);
-            pbarProgreso.setMax(100);
-            pbarProgreso.setProgress(100);
-            mTextTimerVotacion.setText(String.valueOf(10));
+            pbarProgreso.setMax(mTiempoVotacion);
+            pbarProgreso.setProgress(mTiempoVotacion);
+            mTextTimerVotacion.setText(String.valueOf(mTiempoVotacion));
         }
 
         @Override
@@ -307,9 +546,29 @@ public class VotacionActivity extends AppCompatActivity  {
             Log.d(LOG_TAG, "MiTareaAsincrona onPostExecute: ");
             pbarProgreso.setVisibility(View.GONE);
             mTextTimerVotacion.setVisibility(View.GONE);
-            if(result)
+
                 Toast.makeText(VotacionActivity.this, "Finalizo el tiempo para votar!", Toast.LENGTH_SHORT).show();
+            if (result) {
                 votar(VOTO_ABSTENCION);
+                mCancelarVoto.setVisibility(View.GONE);
+                mConfirmaVotoPositivo.setVisibility(View.GONE);
+                mConfirmaVotoNegativo.setVisibility(View.GONE);
+                mVotoPositivo.setVisibility(View.GONE);
+                mVotoNegativo.setVisibility(View.GONE);
+
+                if(mTratamientoAbstencion==2) {
+                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.color_ProgressTimer_border)));
+                    mVotoSeleccionado.setText(getString(R.string.texto_Voto_Abstencion));
+                } else if(mTratamientoAbstencion==1) {
+                    mVotoSeleccionado.setText(getText(R.string.texto_Voto_Positivo));
+                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+                } else if(mTratamientoAbstencion==0) {
+                    mVotoSeleccionado.setText(getText(R.string.texto_Voto_Negativo));
+                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
+                }
+                mVotoSeleccionado.setVisibility(View.VISIBLE);
+            }
+            onCancelled();
         }
 
         @Override
@@ -317,107 +576,43 @@ public class VotacionActivity extends AppCompatActivity  {
             Log.d(LOG_TAG, "MiTareaAsincrona onCancelled(): ");
             pbarProgreso.setVisibility(View.GONE);
             mTextTimerVotacion.setVisibility(View.GONE);
-            Toast.makeText(VotacionActivity.this, "Tiempo Voto cancelado!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(VotacionActivity.this, "Tiempo Voto concluido!", Toast.LENGTH_SHORT).show();
+            try {
+                mTareaTimer=null;
+
+            } catch (Throwable throwable) {
+                Log.d(LOG_TAG, "MiTareaAsincrona error al anular Tarea: ");
+                throwable.printStackTrace();
+            }
         }
     }
 
 
-
-    private class InspectorBanderas extends AsyncTask<Void, Datos, Boolean> {
+    private class InspectorBanderas extends AsyncTask<Void, Void, Boolean> {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            Datos datos =new Datos();
-            for(int i=1900; i>=0; i--) {
-                ResultSet r =leerBanderas();
+
+//            for (int i = 1900; i >= 0; i--) {
+            while (true) {
+
+                leerBanderas();
                 Log.d(LOG_TAG, "InspectorBanderas:");
 
-
-
-                Boolean banderaVoto=null;
-                String titulo=null;
-                String texto=null;
-                if (r==null){
-                    Log.d(LOG_TAG, "InspectorBanderas r: null");
-                }
-                try {
-                    r.next();
-                    datos.setBanderaTexto(r.getBoolean("IniciaTexto"));
-                    datos.setBanderaVoto(r.getBoolean("InicioVoto"));
-                    titulo=r.getString("Titulo");
-                    texto=r.getString("Texto");
-                    datos.setTitulo(titulo);
-                    datos.setTexto(texto);
-                    Log.d(LOG_TAG, "InspectorBanderas  bandera Texto: "+ datos.getBanderaTexto());
-                    Log.d(LOG_TAG, "InspectorBanderas  texto: "+ texto);
-
-                     if(datos.getBanderaVoto()||datos.getBanderaTexto()) {
-                         Log.d(LOG_TAG, "InspectorBanderas  datos: "+ datos.toString());
-                         publishProgress(datos);
-                     }
-//                     datos.reset();
-
-
-
-
-                } catch (SQLException e) {
-                    Log.d(LOG_TAG, "InspectorBanderas  catch: ");
-                    e.printStackTrace();
-                }
-
-
-
-                if(isCancelled())
+                if (isCancelled())
                     break;
             }
 
             return true;
         }
 
-        @Override
-        protected void onProgressUpdate(Datos...values) {
-
-            Log.d(LOG_TAG, "InspectorBanderas  datos[0]: "+ values[0].toString());
-                if (values[0].getBanderaTexto()) {
-                String txt = values[0].getTexto();
-                String titulo = values[0].getTitulo();
-                Log.d(LOG_TAG, "InspectorBanderas  onProgressUpdate: "+ txt);
-                Log.d(LOG_TAG, "InspectorBanderas  titulo: "+titulo );
-                collapsingToolbarLayout.setTitle(titulo);
-                mTextParrafo.setText(Html.fromHtml(txt));
-            } else {
-                collapsingToolbarLayout.setTitle("Esperando");
-                mTextParrafo.setText("");
-            }
-            if( values[0].getBanderaVoto()){
-                if(mTarea1==null) {
-                    Log.d(LOG_TAG, "MiTareaAsincrona:  start" );
-                mFabPositivo.setVisibility(View.VISIBLE);
-                mFabNegativo.setVisibility(View.VISIBLE);
-
-                    mTarea1 = new MiTareaAsincrona();
-
-                    if(Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
-                        mTarea1.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                    } else {
-                        mTarea1.execute();
-                    }
-
-                }
-            }
-
-        }
-
-        @Override
-        protected void onPreExecute() {
-        }
 
         @Override
         protected void onPostExecute(Boolean result) {
-            mFabPositivo.setVisibility(View.GONE);
-            mFabNegativo.setVisibility(View.GONE);
+            mVotoPositivo.setVisibility(View.GONE);
+            mVotoNegativo.setVisibility(View.GONE);
 
-            if(result)
+            if (result)
                 Toast.makeText(VotacionActivity.this, "Tarea Inspeccion finalizada!", Toast.LENGTH_SHORT).show();
         }
 
@@ -427,186 +622,388 @@ public class VotacionActivity extends AppCompatActivity  {
         }
     }
 
-    private ResultSet leerBanderas()
-    {
+    private void leerBanderas() {
+
         try {
             Thread.sleep(1000);
-        } catch(InterruptedException e) {}
+        } catch (InterruptedException e) {
 
+        }
 
         Log.d(LOG_TAG, "leerBandera:");
-        try {
+
+        if (conn != null) {
+
+            Log.d(LOG_TAG, "leerBandera: conn-- " + conn.toString());
+
+            String stsql = "Select * FROM age_Sesiones where  Macaddresses='" + mMac + "'";
+
+            QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
+            QueryBD queryBD = new QueryBD();
+            QueryBD.OnQueryResult onQueryResult;
+            onQueryResult = new QueryBD.OnQueryResult() {
+                @Override
+                public void onResultSuccess(final ResultSet rs) {
+                    Log.d(LOG_TAG, " leerBandera success: " + rs);
+                    int row = 0;
+                    String titulo = "";
+                    String texto = "";
+                    Boolean iniciaTexto = false;
+                    Boolean iniciaVoto = false;
+                    int tiempoVotacion= 0;
+                    Boolean limpiar = false;
+                    Boolean apagar = false;
+                    try {
+                        while (rs.next()) {
+                            row++;
+                            titulo = rs.getString("Titulo");
+                            texto = rs.getString("Texto");
+                            iniciaTexto = rs.getBoolean("IniciaTexto");
+                            iniciaVoto = rs.getBoolean("InicioVoto");
+                            tiempoVotacion = rs.getInt("TiempoVotacion");
+                            limpiar = rs.getBoolean("Limpiar");
+                            apagar = rs.getBoolean("Apagar");
+                            Log.d(LOG_TAG, " leerBandera success: " + titulo + " - " + texto + " - " + iniciaTexto + " - " + iniciaVoto);
+                        }
+                        final int finalRow = row;
+                        final String finalTitulo = titulo;
+                        final String finalTexto = texto;
+                        final Boolean finalIniciaTexto = iniciaTexto;
+                        final Boolean finalIniciaVoto = iniciaVoto;
+                        final int finaltiempoVotacion =  tiempoVotacion;
+                        final Boolean finalLimpiar =  limpiar;
+                        final Boolean finalApagar =  apagar;
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                if (finalRow == 1) {
+                                    if(finalIniciaTexto && !mTextosInicializados){
+                                        mTextosInicializados=true;// Se ponee en true luego de leer los primero textos
+                                    }
+
+                                    if (finalIniciaTexto || mTextosInicializados ) { //ingres cuando iniciaTexto es true
+                                        mNestedSecrollViewVotacion.setAlpha(1f);
+                                        collapsingToolbarLayout.setTitle(finalTitulo);
+                                        mTextParrafo.setText(Html.fromHtml(finalTexto));
+                                    } else {
+                                        collapsingToolbarLayout.setTitle("Esperando");
+                                        mTextParrafo.setText("Aqui se pueden mostrar otros datos");
+                                    }
+                                    if(finalIniciaTexto){
+                                        indicarTextosLeidos();
+                                    }
+                                    if (finalIniciaVoto) {
+                                        mNestedSecrollViewVotacion.scrollTo(0, 0);
+                                        mNestedSecrollViewVotacion.stopNestedScroll();
+                                        mNestedSecrollViewVotacion.setAlpha(0.5f);
 
 
-//            /En el stsql se puede agregar cualquier consulta SQL deseada.
-            // tableet NumConcejal=37 and Macaddresses='60:d9:a0:94:f9:5e'
-            // moto5   NumConcejal=15 and Macaddresses='80:58:f8:51:db:35'
-//            String stsql = "Select * FROM age_Sesiones where NumConcejal=37 and Macaddresses='80:58:f8:51:db:35'";
-            String stsql = "Select * FROM age_Sesiones where  Macaddresses='80:58:f8:51:db:35'";
-            // String stsql = "SELECT @@VERSION";
-            Statement st = conextionBD().createStatement();
-            ResultSet rs = st.executeQuery(stsql);
-            // rs.next();
-            //System.out.println(rs.getString(1));
-            Log.d(LOG_TAG, " leerBandera:: qwuery");
-//            Log.d(LOG_TAG, " leerDato: ResultSet rs"  +rs.getCursorName());
+                                        mTiempoVotacion=finaltiempoVotacion;
+                                        if (mTareaTimer == null && !mActualizandoDatosTimerVoto) {
+                                            Log.d(LOG_TAG, "finalIniciaVoto:  start");
+                                            Animation animacionshowBoton =
+                                                    AnimationUtils.loadAnimation(getApplicationContext(), R.anim.show_boton_votacion);
 
-            if (rs == null) {
-                Log.d(LOG_TAG, " leerBandera: rs nulo");
+
+                                            mVotoPositivo.startAnimation(animacionshowBoton);
+                                            mVotoNegativo.startAnimation(animacionshowBoton);
+                                            mVotoPositivo.setVisibility(View.VISIBLE);
+                                            mVotoNegativo.setVisibility(View.VISIBLE);
+
+                                            mTareaTimer = new TimerTask();
+                                            mtiempoInicioVotacion=System.currentTimeMillis();
+
+                                            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                                                mTareaTimer.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,mTiempoVotacion);
+                                            } else {
+                                                mTareaTimer.execute(mTiempoVotacion);
+                                            }
+
+                                        } else {
+                                            Log.d(LOG_TAG, "finalIniciaVoto:  no nula");
+                                        }
+                                    }
+                                    if(finalApagar){
+                                        mApagar=finalApagar;
+                                        sacarConcejalEnSesion();
+                                    } if(finalLimpiar){
+                                        limpiar();
+                                    }
+                                }
+
+                            }
+                        });
+
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onResultFail(String errorMessage) {
+                    Log.d(LOG_TAG, " executeUpdate onResultFail: " + errorMessage);
+                }
+            };
+            queryBD.setOnResultListener(onQueryResult);
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryData);
+            } else {
+                queryBD.execute(queryData);
             }
-            Log.d(LOG_TAG, " leerBandera:: Resultados");
-//            while (rs.next()) {
-//
-//                Log.d(LOG_TAG, "NumDispositivo: " + rs.getString("NumDispositivo") + "- serie: " + rs.getString("Serie") + " - Macaddresses:  " + rs.getString("Macaddresses"));
-//
-//            }
-
-            return rs;
-//            Toast.makeText(getApplicationContext(), "leerDato", Toast.LENGTH_LONG).show();
 
 
-        } catch (SQLException e) {
-            Log.d(LOG_TAG, " leerBandera: " + e.toString());
-            return null;
-//            Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
+            Log.d(LOG_TAG, " leerBandera: qwuery");
 
+
+        } else {
+            Log.d(LOG_TAG, "leerBandera: conn nullo-- ");
         }
-
 
     }
 
-    public Connection conextionBD() {
-        Log.d(LOG_TAG, "conextionBD():");
-        Connection connection = null;
-        try {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            Log.d(LOG_TAG, "conextionBD()-policy:" + policy.toString());
-            StrictMode.setThreadPolicy(policy);
-            Class.forName("net.sourceforge.jtds.jdbc.Driver").newInstance();
-//             mi pc 192.168.0.34
-//             mi pc 192.168.0.17
-//             Bulnes 192.168.0.6
-            connection = DriverManager.getConnection("jdbc:jtds:sqlserver://192.168.0.6;databaseName=HCD;user=hcd;password=d4k4r");
 
-            Log.d(LOG_TAG, "conextionBD()-connection:" + connection.toString());
-        } catch (Exception e) {
-            Log.d(LOG_TAG, "conextionBD()-Exception:" + e.getMessage().toString());
-//            Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
+    private void leerParametros() {
+
+
+
+        Log.d(LOG_TAG, "leerParametros:");
+
+        if (conn != null) {
+
+            Log.d(LOG_TAG, "leerParametros: conn-- " + conn.toString());
+
+            String stsql = "Select * FROM gen_Parametros where  NumParametro= 1";
+
+            QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
+            QueryBD queryBD = new QueryBD();
+            QueryBD.OnQueryResult onQueryResult;
+            onQueryResult = new QueryBD.OnQueryResult() {
+                @Override
+                public void onResultSuccess(final ResultSet rs) {
+                    Log.d(LOG_TAG, " leerParametros success: " + rs);
+                    int row = 0;
+
+                    int noVoto= 0;
+
+                    try {
+                        while (rs.next()) {
+                            row++;
+
+                            noVoto = rs.getInt("Sesiones_SinVoto");
+
+                            Log.d(LOG_TAG, " leerParametros: " + noVoto);
+                        }
+                        final int finalRow = row;
+
+                        final int finaltiempoVotacion =  noVoto;
+
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                if (finalRow == 1) {
+
+                                mTratamientoAbstencion =finaltiempoVotacion;
+                            }
+                        }});
+
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onResultFail(String errorMessage) {
+                    Log.d(LOG_TAG, " leerParametros onResultFail: " + errorMessage);
+                }
+            };
+            queryBD.setOnResultListener(onQueryResult);
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
+
+
+            Log.d(LOG_TAG, " leerParametros: qwuery");
+
+
+        } else {
+            Log.d(LOG_TAG, "leerParametros: conn nullo-- ");
         }
-        return connection;
+
     }
 
-    private  class Datos{
 
-        Boolean  banderaVoto;
-        Boolean banderaTexto;
-        String titulo;
-        String texto;
-        int duracionVotacion;
+    // pone en false el campo IniciaTexto para indicar que ya se actualizaron los titulos y textos
+    // cuando esta bander se ponga en un nuevamente se llera otra vez.
+    public void indicarTextosLeidos() {
+        mActualizandoDatosTextos=true;
+        Log.d(LOG_TAG, " indicarTextosLeidos:");
+        if (conn != null) {
+            Log.d(LOG_TAG, " indicarTextosLeidos-connection:" + conn.toString());
+            PreparedStatement pst = null;
+            try {
+                pst = conn.prepareStatement("UPDATE age_Sesiones "
+                        + " SET IniciaTexto= ?"
+                        + "WHERE  Macaddresses='" + mMac + "'");
+
+                pst.setBoolean(1, false);
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  indicarTextosLeidos: success: " + cantidadLineasModificadas);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                mActualizandoDatosTextos=false;
+                                Toast.makeText(getApplicationContext(), " indicarTextosLeidos: con Éxito", Toast.LENGTH_LONG).show();
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(String errorMessage) {
+                        Log.d(LOG_TAG, "  indicarTextosLeidos: onResultFail: " + errorMessage);
+                    }
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+
+                Log.d(LOG_TAG, "indicarTextosLeidos  pst.executeUpdate:");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
 
 
+        } else {
+            Log.d(LOG_TAG, " indicarTextosLeidos error sin Conexion ");
 
-        public Datos() {
-            this.banderaVoto = false;
-            this.banderaTexto = false;
-            this.titulo ="";
-            this.texto = "";
-            this.duracionVotacion = 1000*10;
         }
 
-        public Datos(Boolean banderaVoto,Boolean banderaTexto,String titulo,String texto,int duracionVotacion) {
-            this.banderaVoto = banderaVoto;
-            this.banderaTexto = banderaTexto;
-            this.titulo =titulo;
-            this.texto = texto;
-            this.duracionVotacion = 1000*duracionVotacion;
+    }
+
+    public void indicarLimpiarLeido() {
+
+        Log.d(LOG_TAG, " indicarLimpiarLeido:");
+        if (conn != null) {
+            Log.d(LOG_TAG, " indicarLimpiarLeido-connection:" + conn.toString());
+            PreparedStatement pst = null;
+            try {
+                pst = conn.prepareStatement("UPDATE age_Sesiones "
+                        + " SET Limpiar= ?"
+                        + "WHERE  Macaddresses='" + mMac + "'");
+
+                pst.setBoolean(1, false);
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  indicarLimpiarLeido: success: " + cantidadLineasModificadas);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                mActualizandoDatosTextos=false;
+                                Toast.makeText(getApplicationContext(), " indicarLimpiarLeido: con Éxito", Toast.LENGTH_LONG).show();
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(String errorMessage) {
+                        Log.d(LOG_TAG, "  indicarLimpiarLeido: onResultFail: " + errorMessage);
+                    }
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+
+                Log.d(LOG_TAG, "indicarLimpiarLeido  pst.executeUpdate:");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
+        } else {
+            Log.d(LOG_TAG, "indicarLimpiarLeido error sin Conexion ");
+
         }
-
-        public void reset(){
-            this.banderaVoto = false;
-            this.banderaTexto = false;
-            this.titulo ="";
-            this.texto = "";
-            this.duracionVotacion = 1000*10;
-        }
-
-        public String toString(){
-
-            String s;
-            s= "banderaVoto:"+  this.banderaVoto
-            + " BanderaTexto:"+this.banderaTexto
-            +" titulo: "+this.titulo
-            + " texto "+this.texto
-            + " duracionVotacion: "+this.duracionVotacion ;
-            return s;
-        }
-
-
-        public Boolean getBanderaTexto() {
-            return this.banderaTexto;
-        }
-
-        public void setBanderaTexto(Boolean banderaTexto) {
-            this.banderaTexto = banderaTexto;
-        }
-
-        public Boolean getBanderaVoto() {
-            return this.banderaVoto;
-        }
-
-        public void setBanderaVoto(Boolean banderaVoto) {
-            this.banderaVoto = banderaVoto;
-        }
-
-        public String getTitulo() {
-            return this.titulo;
-        }
-
-        public void setTitulo(String titulo) {
-            this.titulo = titulo;
-        }
-
-        public String getTexto() {
-            return this.texto;
-        }
-
-        public void setTexto(String texto) {
-            this.texto = texto;
-        }
-
-        public int getDuracionVotacion() {
-            return this.duracionVotacion;
-        }
-
-        public void setDuracionVotacion(int duracionVotacion) {
-            this.duracionVotacion = duracionVotacion;
-        }
-
 
     }
 
     public void votar(int voto) {
-        Log.d(LOG_TAG, " votar-connection:");
-        try {
+        mActualizandoDatosTimerVoto=true;
+        Log.d(LOG_TAG, " votar:");
+        if (conn != null) {
+            Log.d(LOG_TAG, " votar-connection:" + conn.toString());
+            PreparedStatement pst = null;
+            try {
+                pst = conn.prepareStatement("UPDATE age_Sesiones "
+                        + " SET InicioVoto= ?, ResultadoVoto=? , TiempoInicio=?, TiempoFin=?"
+                        + "WHERE  Macaddresses='" + mMac + "'");
 
-            PreparedStatement pst = conextionBD().prepareStatement("UPDATE age_Sesiones "
-                    + " SET InicioVoto= ?, ResultadoVoto=?"
-                    + "WHERE  NumConcejal=37 and Macaddresses='60:d9:a0:94:f9:5e'"
-                    // tableet NumConcejal=37 and Macaddresses='60:d9:a0:94:f9:5e'
-                    // moto5   NumConcejal=15 and Macaddresses='80:58:f8:51:db:35'
+                pst.setBoolean(1, false);
+                pst.setInt(2, voto);
+//                Timestamp t = new Timestamp(System.currentTimeMillis());
+//                Log.d(LOG_TAG, " Timestamp:" + System.currentTimeMillis());
+                pst.setString(3,Long.toString( mtiempoInicioVotacion));//tiempoInicio
+                pst.setString(4,Long.toString( System.currentTimeMillis()));//tiempoFin
 
-            );
-            Log.d(LOG_TAG, " votar-connection:" + conextionBD().toString());
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  votar: success: " + cantidadLineasModificadas);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                mActualizandoDatosTimerVoto=false;
 
-            pst.setBoolean(1, false);
-            pst.setInt(2, voto);
+                                Toast.makeText(getApplicationContext(), " votar: con Éxito", Toast.LENGTH_LONG).show();
 
-            pst.executeUpdate();
-            Log.d(LOG_TAG, "votar  pst.executeUpdate:");
+                            }
+                        });
 
-        } catch (SQLException e) {
-            Log.d(LOG_TAG, " votar error " + e.toString());
+                    }
 
+                    @Override
+                    public void onResultFail(String errorMessage) {
+                        Log.d(LOG_TAG, "  votar: onResultFail: " + errorMessage);
+                    }
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+
+                Log.d(LOG_TAG, "votar  pst.executeUpdate:");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
+        } else {
+            Log.d(LOG_TAG, " votar error sin Conexion ");
 
         }
 
@@ -619,7 +1016,7 @@ public class VotacionActivity extends AppCompatActivity  {
             Log.d(LOG_TAG, " sacarConcejalEnSesion:" + conn.toString());
             try {
                 PreparedStatement pst = conn.prepareStatement("delete age_Sesiones"
-                        + " Where Macaddresses=?" );
+                        + " Where Macaddresses=?");
 
 
                 Log.d(LOG_TAG, " sacarConcejalEnSesion connection:" + conn.toString());
@@ -631,15 +1028,21 @@ public class VotacionActivity extends AppCompatActivity  {
                 onInsertResult = new InsertBD.OnInsertResult() {
                     @Override
                     public void onResultSuccess(String msg) {
-                        Log.d(LOG_TAG, " ingresaConcejalEnSesion success: " + msg);
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "agregarDato correctamente", Toast.LENGTH_LONG).show();
-                                Intent intent = new Intent(getApplication(), VotacionActivity.class);
+                        Log.d(LOG_TAG, " sacarConcejalEnSesion success: " + msg);
 
-                                startActivity(intent);
+                        if (conn != null) {
+                            try {
+                                conn.close();
+                                conn = null;
+                                Log.d(LOG_TAG, " sacarConcejalEnSesion) Close connection");
+                            } catch (SQLException e) {
+                                Log.d(LOG_TAG, " sacarConcejalEnSesion Close exception" + e.getMessage());
+
                             }
-                        });
+                        }
+                        if(mApagar){
+                            finish();
+                        }
 
                     }
 
@@ -649,7 +1052,13 @@ public class VotacionActivity extends AppCompatActivity  {
                     }
                 };
                 insertBD.setOnResultListener(onInsertResult);
-                insertBD.execute(pst);
+//                insertBD.execute(pst);xx
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    insertBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    insertBD.execute(pst);
+                }
+
 
 
             } catch (SQLException e) {
@@ -663,6 +1072,26 @@ public class VotacionActivity extends AppCompatActivity  {
         }
     }
 
+    @Override
+    public boolean onSupportNavigateUp() {
+        Log.d(LOG_TAG, "onSupportNavigateUp()");
+        return true;
+    }
 
+    @Override
+    public void onBackPressed() {
+        Log.d(LOG_TAG, "onBackPressed()");
+//        if (mActivadoCorrecto) {
+//            super.onBackPressed();
+//        }
+    }
+
+    public void limpiar(){
+        mVotoSeleccionado.setText("");
+        mVotoSeleccionado.setVisibility(View.GONE);
+        collapsingToolbarLayout.setTitle("");
+        mTextParrafo.setText("");
+        indicarLimpiarLeido();
+    }
 
 }

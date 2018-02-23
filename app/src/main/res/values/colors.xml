@@ -14,6 +14,11 @@
     <color name="color_BotonIngresar_start">#5d6bb9</color>
     <color name="color_BotonIngresar_end">#29399c</color>
 
+    <color name="color_ProgressTimer_border">#0e77ef</color>
+    <color name="color_ProgressTimer_start">#e9a419</color>
+    <color name="color_ProgressTimer_end">#e9f000</color>
+    <color name="color_ProgressTimer_texto">#ea221e</color>
+    <color name="color_Texto">#ffffff</color>
 
 
 </resources>

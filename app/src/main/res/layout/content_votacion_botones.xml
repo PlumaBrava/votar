@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:layout_editor_absoluteY="81dp">
+
+
+    <ProgressBar
+        android:id="@+id/pbarProgreso"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+
+        android:layout_marginTop="240dp"
+        android:max="100"
+        android:minHeight="64dp"
+        android:minWidth="400dp"
+
+        android:progressDrawable="@drawable/custom_progress_bar_horizontal"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textTimer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+
+        android:textColor="@color/color_ProgressTimer_texto"
+        android:textSize="30sp"
+
+        app:layout_constraintEnd_toEndOf="@id/pbarProgreso"
+        app:layout_constraintStart_toStartOf="@id/pbarProgreso"
+        app:layout_constraintTop_toTopOf="@id/pbarProgreso" />
+    <!--android:layout_marginTop="240dp"-->
+    <!--app:layout_constraintBottom_toBottomOf="parent"-->
+    <TextView
+        android:id="@+id/votoSeleccionado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center_horizontal"
+        android:radius="15dp"
+        android:shadowRadius="1.5"
+
+        android:textSize="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/VotoNegativo"
+        android:layout_width="168dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_weight="1"
+        android:background="@drawable/boton_voto"
+
+
+        android:backgroundTint="@color/colorVotoNegativo"
+        android:text="@string/boton_Voto_Negativo"
+
+        app:layout_constraintBottom_toTopOf="@+id/concejal"
+
+        app:layout_constraintEnd_toStartOf="@+id/VotoPositivo"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintLeft_toLeftOf="parent" />
+    <!--android:drawableLeft="@android:drawable/ic_delete"-->
+
+    <Button
+        android:id="@+id/VotoPositivo"
+        android:layout_width="168dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:layout_weight="3"
+        android:background="@drawable/boton_voto"
+        android:backgroundTint="@android:color/holo_green_dark"
+
+
+        android:text="@string/boton_Voto_Positivo"
+
+
+        app:layout_constraintBottom_toTopOf="@+id/concejal"
+        app:layout_constraintLeft_toRightOf="@+id/VotoNegativo"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <Button
+        android:id="@+id/confirmaVotoPositivo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/boton_voto"
+        android:backgroundTint="@color/colorVotoPositivo"
+        android:paddingHorizontal="16dp"
+        android:text="@string/boton_Confirma_Voto_Positivo"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cancelarVoto" />
+
+    <Button
+        android:id="@+id/confirmaVotoNegativo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/boton_voto"
+        android:backgroundTint="@color/colorVotoNegativo"
+        android:paddingHorizontal="16dp"
+        android:text="@string/boton_Confirma_Voto_Negativo"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/cancelarVoto" />
+
+    <Button
+        android:id="@+id/cancelarVoto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="64dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/ic_cancel_black_24dp"
+        app:layout_constraintEnd_toEndOf="@+id/pbarProgreso"
+        app:layout_constraintTop_toBottomOf="@+id/pbarProgreso" />
+    <!--android:text="@string/boton_Cancelar"-->
+    <!--android:backgroundTint="@color/colorVotoNegativo"-->
+
+    <TextView
+        android:id="@+id/concejal"
+        android:layout_width="305dp"
+        android:layout_height="80dp"
+        android:background="@color/colorPrimaryDark"
+        android:gravity="center"
+        android:text="TextView Conc"
+        android:textColor="@color/color_Texto"
+        android:textSize="54dp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</android.support.constraint.ConstraintLayout>

@@ -1,0 +1,190 @@
+{
+  "project_info": {
+    "project_number": "734782287401",
+    "firebase_url": "https://acoustic-rider-132123.firebaseio.com",
+    "project_id": "acoustic-rider-132123",
+    "storage_bucket": "acoustic-rider-132123.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734782287401:android:3c87f85f413256b4",
+        "android_client_info": {
+          "package_name": "com.nextnut.appengine"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "734782287401-emhf5g7ujdlcr1ngq4pbkahkv00a14i5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nextnut.appengine",
+            "certificate_hash": "4e59e47afd1006a8bbaa34d5714a510057897e2e"
+          }
+        },
+        {
+          "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "734782287401-vsfllv2di1koo6vru7dvm0laimtco9l5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ4yL-wyNVFa6CO5-u9DMWrzVN7B3PgZs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734782287401:android:d8d4add0e9c0c5af",
+        "android_client_info": {
+          "package_name": "com.nextnut.logistica"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "734782287401-vsfllv2di1koo6vru7dvm0laimtco9l5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ4yL-wyNVFa6CO5-u9DMWrzVN7B3PgZs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734782287401:android:89502c274d992f7d",
+        "android_client_info": {
+          "package_name": "com.mabecar.termometro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "734782287401-rfeoqjblbp649b6ar10h5bug8e03qv4v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mabecar.termometro",
+            "certificate_hash": "4e59e47afd1006a8bbaa34d5714a510057897e2e"
+          }
+        },
+        {
+          "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "734782287401-vsfllv2di1koo6vru7dvm0laimtco9l5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ4yL-wyNVFa6CO5-u9DMWrzVN7B3PgZs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734782287401:android:9878860cade65671",
+        "android_client_info": {
+          "package_name": "com.ncodata.votar"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "734782287401-2vfge72806bbksc9p2hp5on2f6c07j65.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ncodata.votar",
+            "certificate_hash": "4e59e47afd1006a8bbaa34d5714a510057897e2e"
+          }
+        },
+        {
+          "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "734782287401-vsfllv2di1koo6vru7dvm0laimtco9l5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ4yL-wyNVFa6CO5-u9DMWrzVN7B3PgZs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734782287401-9othedgun90t0mpg83otdrptgqf844cf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -2,6 +2,7 @@
 <android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nestedSecrollViewVotacion"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
@@ -10,43 +11,12 @@
 
 
     <LinearLayout
-        android:id="@+id/layout_email_password"
+        android:id="@+id/linearLayoutVotacion"
         android:layout_width="match_parent"
-
+        android:nestedScrollingEnabled="false"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/progressBar"
-            android:layout_below="@+id/progressBar" />
-
-        <ProgressBar
-            android:id="@+id/pbarProgreso"
-            style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="15dp"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
-            android:layout_marginTop="15dp"
-            android:max="100"
-            android:minHeight="100dp"
-            android:minWidth="200dp"
-            android:progressDrawable="@drawable/custom_progress_bar_horizontal" />
-
-        <TextView
-            android:id="@+id/votoSeleccionado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:textSize="32dp"
-            android:radius="15dp"
-            android:shadowRadius="1.5"
-
-            android:gravity="center_horizontal" />
 
         <TextView
             android:id="@+id/textoParrafo"
@@ -54,6 +24,8 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/text_margin"
             android:text="@string/large_text" />
+
+
     </LinearLayout>
 
 </android.support.v4.widget.NestedScrollView>

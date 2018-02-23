@@ -7,8 +7,11 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -23,10 +26,13 @@ import android.widget.Toast;
 
 import com.ncodata.votar.sql.ConnextionBD;
 import com.ncodata.votar.sql.InsertBD;
+import com.ncodata.votar.sql.QueryBD;
+import com.ncodata.votar.sql.UpdateBD;
 
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import static com.ncodata.votar.utils.SporteConf.getMacAddr;
@@ -42,6 +48,8 @@ public class ConfiguracionActivity extends AppCompatActivity {
     ConnextionBD.OnConnectionResult onConnectionResult;
     private ImageView mIconoBaseConectada;
     private ImageView mIconoBaseDesonectada;
+    private PowerManager mPowerManager;
+    private PowerManager.WakeLock mWakeLock;
 
     /**
      * A dummy authentication store containing known user names and passwords.
@@ -66,6 +74,8 @@ public class ConfiguracionActivity extends AppCompatActivity {
     private EditText mPasswordBase;
     private View mProgressView;
     private View mLoginFormView;
+    private Integer mDispositivosIndice;
+    private Integer mDispositivosIncremento;
 
 
     private static final int MY_PERMISSIONS_REQUEST_READ_PHONE_STATE = 0;
@@ -104,11 +114,22 @@ public class ConfiguracionActivity extends AppCompatActivity {
         mBotonRegistrarTablet.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                registar();
+                buscarMacEnDispositivos();
+
+            }
+        });
+
+        final Button apagar=(Button)findViewById(R.id.apagar);
+        apagar.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(LOG_TAG, " apagar on Click" );
+                apagar();
             }
         });
 
         Button mBotonRegistrarBase = (Button) findViewById(R.id.botonRegistarBase);
+
         mBotonRegistrarBase.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -132,7 +153,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
         editor.commit();
 
 
-
         onConnectionResult = new ConnextionBD.OnConnectionResult() {
             @Override
             public void onResultSuccess(final Connection connection) {
@@ -143,6 +163,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
                             conn = connection;
                             mIconoBaseConectada.setVisibility(View.VISIBLE);
                             mIconoBaseDesonectada.setVisibility(View.GONE);
+                            leerSecuenciaDispositivos();
                         }
 
                     }
@@ -176,7 +197,11 @@ public class ConfiguracionActivity extends AppCompatActivity {
     private void populateAutoComplete() {
         mMac.setText(getMacAddr());
         String serial_no = null;
+        Log.i("TAG","serie android.os.Build.SERIAL: " + Build.SERIAL);
+        String androidDeviceId = Settings.Secure.getString(getApplicationContext().getContentResolver(),
+                Settings.Secure.ANDROID_ID);
 
+        Log.i("TAG","serie Secure.ANDROID_ID: " + androidDeviceId);
         try {
             Class<?> c = Class.forName("android.os.SystemProperties");
             Method get = c.getMethod("get", String.class);
@@ -189,13 +214,12 @@ public class ConfiguracionActivity extends AppCompatActivity {
         }
 
         SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
-       mIp.setText(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
-       mNombreBase.setText(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
-       mUserBase.setText(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
-       mPasswordBase.setText(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
+        mIp.setText(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
+        mNombreBase.setText(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
+        mUserBase.setText(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
+        mPasswordBase.setText(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
 
     }
-
 
 
     @Override
@@ -206,12 +230,16 @@ public class ConfiguracionActivity extends AppCompatActivity {
             connextionBD = new ConnextionBD();
             connextionBD.setOnResultListener(onConnectionResult);
             SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
-            String ip=(sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
-            String nombreBase=(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
-            String userBase=(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
-            String passwordBase=(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
-            connextionBD.setDatabase(ip,nombreBase,userBase,passwordBase);
-            connextionBD.execute();
+            String ip = (sharedPref.getString(getString(R.string.preference_ip), getString(R.string.preference_ip_default)));
+            String nombreBase = (sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
+            String userBase = (sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
+            String passwordBase = (sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
+            connextionBD.setDatabase(ip, nombreBase, userBase, passwordBase);
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                connextionBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+            } else {
+                connextionBD.execute();
+            }
         }
         super.onResume();
     }
@@ -233,7 +261,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
     }
 
 
-
     /**
      * Set up the {@link android.app.ActionBar}, if the API is available.
      */
@@ -244,7 +271,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
     }
-
 
 
     /**
@@ -283,63 +309,6 @@ public class ConfiguracionActivity extends AppCompatActivity {
         }
     }
 
-
-
-
-
-    public void registar() {
-
-
-        if(conn!=null){
-            try {
-                PreparedStatement pst = conn.prepareStatement("insert into age_Dispositivos "
-                        + "(NumDispositivo,Dispositivo, Serie, Imei, Macaddresses, Estado)"
-                        + "values (?,?,?,?,?,?)");
-
-
-                Log.d(LOG_TAG, " agregarDato-connection:" + conn.toString());
-                Log.d(LOG_TAG, " agregarDato-imei:" + mImei.getText().toString());
-                pst.setString(1, "2");
-                pst.setString(2, mDispositivo.getText().toString());
-
-                pst.setString(3, mSerie.getText().toString());
-                pst.setString(4, mImei.getText().toString());
-                pst.setString(5, getMacAddr());
-                pst.setBoolean(6, true);
-                Log.d(LOG_TAG, " pst.executeUpdate:");
-                InsertBD insertBD=new InsertBD();
-                InsertBD.OnInsertResult onInsertResult;
-                onInsertResult= new InsertBD.OnInsertResult() {
-                    @Override
-                    public void onResultSuccess(String msg) {
-                        Log.d(LOG_TAG, " executeUpdate success: "+msg);
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(getApplicationContext(), "agregarDato correctamente", Toast.LENGTH_LONG).show();
-                            }
-                        });
-
-                    }
-
-                    @Override
-                    public void onResultFail(String errorMessage) {
-                        Log.d(LOG_TAG, " executeUpdate onResultFail: "+errorMessage);
-                    }
-                };
-                insertBD.setOnResultListener(onInsertResult);
-                insertBD.execute(pst);
-
-
-
-
-            } catch (SQLException e) {
-                Log.d(LOG_TAG, " agregarDato error " + e.toString());
-                Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
-
-            }
-
-        }
-    }
 
     public void loadIMEI() {
         // Check if the READ_PHONE_STATE permission is already available.
@@ -386,6 +355,393 @@ public class ConfiguracionActivity extends AppCompatActivity {
 //                Toast.makeText(this, "ehgehfg", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    public void leerSecuenciaDispositivos() {
+        Log.d(LOG_TAG, " leerSecuenciaDispositivos ");
+        if (conn != null) {
+            Log.d(LOG_TAG, " leerSecuenciaDispositivos  conn != null");
+
+//            /En el stsql se puede agregar cualquier consulta SQL deseada.
+            String stsql = "Select * FROM gen_Secuencias where Secuencia= 'age_Dispositivos'";
+            QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
+            QueryBD queryBD = new QueryBD();
+            QueryBD.OnQueryResult onQueryResult;
+            onQueryResult = new QueryBD.OnQueryResult() {
+                @Override
+                public void onResultSuccess(final ResultSet rs) {
+                    Log.d(LOG_TAG, " leerSecuenciaDispositivos query success: " + rs);
+                    int row = 0;
+                    String concejal = "";
+                    try {
+                        while (rs.next()) {
+                            row++;
+
+                            Log.d(LOG_TAG, "Valor: " + rs.getInt("Valor"));
+                            Log.d(LOG_TAG, "Incremento: " + rs.getInt("Incremento"));
+                            mDispositivosIndice = rs.getInt("Valor");
+                            mDispositivosIncremento = rs.getInt("Incremento");
+//                            Log.d(LOG_TAG, "NumDispositivo: " + rs.getString("NumDispositivo") + "- serie: " + rs.getString("Serie") + " - Macaddresses:  " + rs.getString("Macaddresses"));
+
+                        }
+                        final int finalRow = row;
+                        final String finalConcejal = concejal;
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+//                                if (finalRow == 1) {
+//                                    mConcejalAsignado.setText(finalConcejal);
+//                                } else if (finalRow > 1) {
+//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalMultiple));
+//                                } else if (finalRow == 0) {
+//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalSinAsignar));
+//                                }
+                            }
+                        });
+
+                    } catch (SQLException e) {
+
+                        Log.d(LOG_TAG, " leerSecuenciaDispositivos catch : " + e.getMessage());
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onResultFail(final String errorMessage) {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), " leerSecuenciaDispositivos : " + errorMessage, Toast.LENGTH_LONG).show();
+                            Log.d(LOG_TAG, " leerSecuenciaDispositivos onResultFail: " + errorMessage);
+                        }
+                    });
+                }
+            };
+            queryBD.setOnResultListener(onQueryResult);
+            queryBD.execute(queryData);
+
+            Log.d(LOG_TAG, " leerSecuenciaDispositivos: qwuery");
+
+
+        }
+        Log.d(LOG_TAG, " leerSecuenciaDispositivos  conn == null");
+        Toast.makeText(getApplicationContext(), "Error:" + "Sin conexion", Toast.LENGTH_LONG).show();
+    }
+
+    public void registar() {
+
+
+        if (conn != null) {
+            try {
+                PreparedStatement pst = conn.prepareStatement("insert into age_Dispositivos "
+                        + "(NumDispositivo,Dispositivo, Serie, Imei, Macaddresses, Estado)"
+                        + "values (?,?,?,?,?,?)");
+
+
+                Log.d(LOG_TAG, " agregarDato-connection:" + conn.toString());
+                Log.d(LOG_TAG, " agregarDato-imei:" + mImei.getText().toString());
+                pst.setInt(1, mDispositivosIndice + mDispositivosIncremento);
+                pst.setString(2, mDispositivo.getText().toString());
+
+                pst.setString(3, mSerie.getText().toString());
+                pst.setString(4, mImei.getText().toString());
+                pst.setString(5, getMacAddr());
+                pst.setBoolean(6, true);
+                Log.d(LOG_TAG, " pst.executeUpdate:");
+                InsertBD insertBD = new InsertBD();
+                InsertBD.OnInsertResult onInsertResult;
+                onInsertResult = new InsertBD.OnInsertResult() {
+                    @Override
+                    public void onResultSuccess(String msg) {
+                        Log.d(LOG_TAG, " executeUpdate success: " + msg);
+                        IncrementarSecuenciaDispositivos();
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), "registar correcto", Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(final String errorMessage) {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), " registar : " + errorMessage, Toast.LENGTH_LONG).show();
+                            }
+                        });
+
+                        Log.d(LOG_TAG, " executeUpdate onResultFail: " + errorMessage);
+                    }
+                };
+                insertBD.setOnResultListener(onInsertResult);
+                insertBD.execute(pst);
+
+
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " agregarDato error " + e.toString());
+                Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
+
+            }
+
+        }
+    }
+
+    public void updateRegistro() {
+
+        if (conn != null) {
+            Log.d(LOG_TAG, " updateRegistro conn != null");
+
+            PreparedStatement pst = null;
+            try {
+
+
+                pst = conn.prepareStatement("UPDATE age_Dispositivos "
+                        + " SET Dispositivo= ? ,"
+                        + "  Serie= ? ,"
+                        + "  Imei= ? ,"
+                        + "  Macaddresses= ?, "
+                        + "  Estado= ? "
+                        + " WHERE  NumDispositivo= ? ");
+
+
+                pst.setString(1, mDispositivo.getText().toString());
+
+                pst.setString(2, mSerie.getText().toString());
+                pst.setString(3, mImei.getText().toString());
+                pst.setString(4, getMacAddr());
+                pst.setBoolean(5, true);
+                pst.setInt(6, mDispositivosIndice);
+
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  updateRegistro: success: " + cantidadLineasModificadas);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+                                Toast.makeText(getApplicationContext(), " updateRegistro: con Éxito", Toast.LENGTH_LONG).show();
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(final String errorMessage) {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), " updateRegistro: " + errorMessage, Toast.LENGTH_LONG).show();
+                                Log.d(LOG_TAG, "  updateRegistro: onResultFail: " + errorMessage);
+                            }
+                        });
+                    }
+
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+                Log.d(LOG_TAG, " updateRegistro  pst.executeUpdate");
+
+
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " updateRegistro  catch " + e.getMessage());
+                e.printStackTrace();
+            }
+
+        }
+
+        Log.d(LOG_TAG, " updateRegistro  catch  conn==null");
+    }
+
+
+    public void IncrementarSecuenciaDispositivos() {
+
+        if (conn != null) {
+            Log.d(LOG_TAG, " IncrementarSecuenciaDispositivos conn == null");
+
+            PreparedStatement pst = null;
+            try {
+                pst = conn.prepareStatement("UPDATE gen_Secuencias "
+                        + " SET Valor= ?"
+                        + "WHERE  Secuencia= ?");
+
+                pst.setInt(1, mDispositivosIndice + mDispositivosIncremento);
+                pst.setString(2, "age_Dispositivos");
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  IncrementarSecuenciaDispositivos: success: " + cantidadLineasModificadas);
+                        registar();
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+                                Toast.makeText(getApplicationContext(), " IncrementarSecuenciaDispositivos: con Éxito", Toast.LENGTH_LONG).show();
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(final String errorMessage) {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), " IncrementarSecuenciaDispositivos: " + errorMessage, Toast.LENGTH_LONG).show();
+                                Log.d(LOG_TAG, "  IncrementarSecuenciaDispositivos: onResultFail: " + errorMessage);
+                            }
+                        });
+
+                    }
+
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+                Log.d(LOG_TAG, " IncrementarSecuenciaDispositivos  pst.executeUpdate");
+
+
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " IncrementarSecuenciaDispositivos  catch " + e.getMessage());
+                e.printStackTrace();
+            }
+
+        }
+
+        Log.d(LOG_TAG, " IncrementarSecuenciaDispositivos  catch  conn==null");
+    }
+
+
+    public void buscarMacEnDispositivos() {
+        Log.d(LOG_TAG, " buscarMacEnDispositivos ");
+        if (conn != null) {
+            Log.d(LOG_TAG, " buscarMacEnDispositivos  conn != null");
+
+//            /En el stsql se puede agregar cualquier consulta SQL deseada.
+            String mac = getMacAddr();
+            String stsql = "Select * FROM age_Dispositivos where Macaddresses= '" + mac + "'";
+            QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
+            QueryBD queryBD = new QueryBD();
+            QueryBD.OnQueryResult onQueryResult;
+            onQueryResult = new QueryBD.OnQueryResult() {
+                @Override
+                public void onResultSuccess(final ResultSet rs) {
+                    Log.d(LOG_TAG, " buscarMacEnDispositivos query success: " + rs);
+                    int row = 0;
+                    String concejal = "";
+                    try {
+                        while (rs.next()) {
+                            row++;
+
+                            Log.d(LOG_TAG, "buscarMacEnDispositivos NumDispositivo: " + rs.getInt("NumDispositivo"));
+                            Log.d(LOG_TAG, "buscarMacEnDispositivos Macaddresses: " + rs.getString("Macaddresses"));
+                            mDispositivosIndice=rs.getInt("NumDispositivo");
+//                            mDispositivosIndice = rs.getInt("Valor");
+//                            mDispositivosIncremento = rs.getInt("Incremento");
+//                            Log.d(LOG_TAG, "NumDispositivo: " + rs.getString("NumDispositivo") + "- serie: " + rs.getString("Serie") + " - Macaddresses:  " + rs.getString("Macaddresses"));
+
+                        }
+                        final int finalRow = row;
+                        final String finalConcejal = concejal;
+
+                        if (finalRow == 1) {
+                            Log.d(LOG_TAG, "buscarMacEnDispositivos Row=1: ");
+                            updateRegistro();
+                        } else if (finalRow == 0) {
+                            Log.d(LOG_TAG, "buscarMacEnDispositivos Row=0: ");
+                            IncrementarSecuenciaDispositivos();
+
+                        } else {
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    Log.d(LOG_TAG, "buscarMacEnDispositivos Row>1 errror: ");
+                                    Toast.makeText(getApplicationContext(), " buscarMacEnDispositivos : " + " Mac Repetida", Toast.LENGTH_LONG).show();
+//                                if (finalRow == 1) {
+//                                    mConcejalAsignado.setText(finalConcejal);
+//                                } else if (finalRow > 1) {
+//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalMultiple));
+//                                } else if (finalRow == 0) {
+//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalSinAsignar));
+//                                }
+                                }
+                            });
+                        }
+                    } catch (SQLException e) {
+
+                        Log.d(LOG_TAG, " buscarMacEnDispositivos catch : " + e.getMessage());
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onResultFail(final String errorMessage) {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(getApplicationContext(), " buscarMacEnDispositivos : " + errorMessage, Toast.LENGTH_LONG).show();
+                            Log.d(LOG_TAG, " buscarMacEnDispositivos onResultFail: " + errorMessage);
+                        }
+                    });
+                }
+            };
+            queryBD.setOnResultListener(onQueryResult);
+            queryBD.execute(queryData);
+
+            Log.d(LOG_TAG, " buscarMacEnDispositivos: qwuery");
+
+
+        }
+        Log.d(LOG_TAG, " buscarMacEnDispositivos  conn == null");
+        Toast.makeText(getApplicationContext(), "Error:" + "Sin conexion", Toast.LENGTH_LONG).show();
+    }
+    @TargetApi(21) //Suppress lint error for PROXIMITY_SCREEN_OFF_WAKE_LOCK
+    public  void apagar(){
+//        Intent shutdown = new Intent("android.intent.action.ACTION_REQUEST_SHUTDOWN");
+////        shutdown.putExtra("android.intent.extra.KEY_CONFIRM", true);
+////        shutdown.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        shutdown.putExtra("android.intent.extra.KEY_CONFIRM", false);
+//        shutdown.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//        shutdown.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        getApplicationContext(). startActivity(shutdown);
+
+//        try {
+//            Process proc = Runtime.getRuntime()
+//                    .exec(new String[]{ "su", "-c", "reboot -p" });
+//            proc.waitFor();
+//        } catch (Exception ex) {
+//            ex.printStackTrace();
+//        }
+
+
+
+            // turn off screen
+            Log.v("apagar", "OFF!");
+        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//            mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+//            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tag");
+//            mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "tag");
+            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tag");
+            mWakeLock.acquire();
+
+
+
+
     }
 }
 
