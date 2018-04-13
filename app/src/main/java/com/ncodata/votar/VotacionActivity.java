@@ -14,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
@@ -54,7 +55,9 @@ public class VotacionActivity extends AppCompatActivity {
     private InspectorBanderas mInspectorBanderas;
     private TextView mTextTimerVotacion;
     private TextView mTextParrafo;
-    private TextView mVotoSeleccionado;
+    private String mEsperaTitulo;
+    private String mEsperaTexto;
+    private Button mVotoSeleccionado;
     private Toolbar toolbar;
     private CollapsingToolbarLayout collapsingToolbarLayout;
     private Button mVotoPositivo;
@@ -70,6 +73,8 @@ public class VotacionActivity extends AppCompatActivity {
     private Boolean mTextosInicializados=false;
     private Boolean mApagar=false;
     private String mConcejal="";
+    private Boolean mFuncion;
+    private String mAbreviacion;
     private TextView mTextConcejal;
     View decorView;
 
@@ -79,6 +84,8 @@ public class VotacionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Intent intent = getIntent();
         mConcejal=intent.getStringExtra("concejal");
+        mAbreviacion=intent.getStringExtra("abreviacion");
+        mFuncion=intent.getBooleanExtra("funcion",false);
 
         setContentView(R.layout.activity_votacion);
 //        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
@@ -90,18 +97,18 @@ public class VotacionActivity extends AppCompatActivity {
 //        }
 
 
-
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         collapsingToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
-        toolbar.setTitle("titulo");
-        toolbar.setSubtitle("sub t");
+//        toolbar.setTitle("titulo");
+//        toolbar.setSubtitle("sub t");
 
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mIconoBaseConectada = (ImageView) findViewById(R.id.inconoBaseConectada);
         mIconoBaseDesonectada = (ImageView) findViewById(R.id.inconoBaseDesonectada);
         mTextConcejal=(TextView)findViewById(R.id.concejal);
-        mTextConcejal.setText(mConcejal);
+        mTextConcejal.setText(mAbreviacion);
 
         mNestedSecrollViewVotacion = (NestedScrollView) findViewById(R.id.nestedSecrollViewVotacion);
 
@@ -119,8 +126,9 @@ public class VotacionActivity extends AppCompatActivity {
 
 
         mTextParrafo = (TextView) findViewById(R.id.textoParrafo);
-        mVotoSeleccionado = (TextView) findViewById(R.id.votoSeleccionado);
+        mVotoSeleccionado = (Button) findViewById(R.id.votoSeleccionado);
         mVotoSeleccionado.setVisibility(View.GONE);
+//        mVotoSeleccionado.setVisibility(View.VISIBLE);
 
         mVotoPositivo= (Button) findViewById(R.id.VotoPositivo);
         mVotoNegativo = (Button) findViewById(R.id.VotoNegativo);
@@ -185,7 +193,9 @@ public class VotacionActivity extends AppCompatActivity {
 
 
                 mVotoSeleccionado.setText(getText(R.string.texto_Voto_Positivo));
-                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+//                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+//                mVotoSeleccionado.getBackground().setColorFilter(getResources().getColor( R.color.colorVotoPositivo), PorterDuff.Mode.MULTIPLY);
+                mVotoSeleccionado.setBackground((getResources().getDrawable(R.drawable.boton_confirma_voto_positivo)));
                 mVotoSeleccionado.startAnimation(animacionShowVotoSeleccionado);
                 mVotoSeleccionado.setVisibility(View.VISIBLE);
 
@@ -249,7 +259,9 @@ public class VotacionActivity extends AppCompatActivity {
 
 
                 mVotoSeleccionado.setText(getText(R.string.texto_Voto_Negativo));
-                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
+//                mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
+//                mVotoSeleccionado.getBackground().setColorFilter(getResources().getColor( R.color.colorVotoNegativo), PorterDuff.Mode.MULTIPLY);
+                mVotoSeleccionado.setBackground((getResources().getDrawable(R.drawable.boton_confirma_voto_negativo)));
                 mVotoSeleccionado.startAnimation(animacionShowVotoSeleccionado);
                 mVotoSeleccionado.setVisibility(View.VISIBLE);
 
@@ -288,6 +300,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                             mIconoBaseConectada.setVisibility(View.VISIBLE);
                             mIconoBaseDesonectada.setVisibility(View.GONE);
                             leerParametros();
+
                         }
 
                     }
@@ -314,11 +327,18 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
         mMac = getMacAddr();
     }
 
+
+
     @Override
     protected void onStart() {
         Log.d(LOG_TAG, "task onStart()");
         mInspectorBanderas = new InspectorBanderas();
-        mInspectorBanderas.execute();
+//        mInspectorBanderas.execute();
+        if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+            mInspectorBanderas.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        } else {
+            mInspectorBanderas.execute();
+        }
         super.onStart();
     }
 
@@ -354,7 +374,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
     @Override
     protected void onPostResume() {
         Log.d(LOG_TAG, "task onPostResume()");
-
+        ingresaConcejalEnSesion();
         super.onPostResume();
     }
 
@@ -396,9 +416,12 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                  View.SYSTEM_UI_FLAG_FULLSCREEN |// hide status bar
                  View.SYSTEM_UI_FLAG_IMMERSIVE);
 
-//        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-//                View.SYSTEM_UI_FLAG_FULLSCREEN |
-//                View.SYSTEM_UI_FLAG_IMMERSIVE
+//        int uiOptions = (  View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+//                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+//                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+//                | View.SYSTEM_UI_FLAG_FULLSCREEN
+//                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
 //        int uiOptions =  View.SYSTEM_UI_FLAG_LAYOUT_STABLE
 //                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -426,6 +449,9 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                                     | View.SYSTEM_UI_FLAG_FULLSCREEN
                                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
 //                                    | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+
+
+
                             decorView.setSystemUiVisibility(uiOptions1);
 
                         } else {
@@ -498,6 +524,20 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        ActionBar actionBar = getActionBar();
+//        if (actionBar != null) {
+//            actionBar.setHomeButtonEnabled(false); // disable the button
+//            actionBar.setDisplayHomeAsUpEnabled(false); // remove the left caret
+//            actionBar.setDisplayShowHomeEnabled(false); // remove the icon
+//        }
+//        return super.onCreateOptionsMenu(menu);
+//
+//    }
+
+
+
     private class TimerTask extends AsyncTask<Integer, Integer, Boolean> {
 
         @Override
@@ -561,10 +601,12 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     mVotoSeleccionado.setText(getString(R.string.texto_Voto_Abstencion));
                 } else if(mTratamientoAbstencion==1) {
                     mVotoSeleccionado.setText(getText(R.string.texto_Voto_Positivo));
-                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+//                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoPositivo)));
+                    mVotoSeleccionado.setBackground((getResources().getDrawable(R.drawable.boton_confirma_voto_positivo)));
                 } else if(mTratamientoAbstencion==0) {
                     mVotoSeleccionado.setText(getText(R.string.texto_Voto_Negativo));
-                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
+                    mVotoSeleccionado.setBackground((getResources().getDrawable(R.drawable.boton_confirma_voto_negativo)));
+//                    mVotoSeleccionado.setBackgroundColor((getResources().getColor(R.color.colorVotoNegativo)));
                 }
                 mVotoSeleccionado.setVisibility(View.VISIBLE);
             }
@@ -593,7 +635,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
         @Override
         protected Boolean doInBackground(Void... params) {
 
-//            for (int i = 1900; i >= 0; i--) {
+
             while (true) {
 
                 leerBanderas();
@@ -612,13 +654,14 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             mVotoPositivo.setVisibility(View.GONE);
             mVotoNegativo.setVisibility(View.GONE);
 
-            if (result)
-                Toast.makeText(VotacionActivity.this, "Tarea Inspeccion finalizada!", Toast.LENGTH_SHORT).show();
+            if (result){
+//                Toast.makeText(VotacionActivity.this, "Tarea Inspeccion finalizada!", Toast.LENGTH_SHORT).show();
+        }
         }
 
         @Override
         protected void onCancelled() {
-            Toast.makeText(VotacionActivity.this, "Tarea Inspeccion cancelada!", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(VotacionActivity.this, "Tarea Inspeccion cancelada!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -636,7 +679,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 
             Log.d(LOG_TAG, "leerBandera: conn-- " + conn.toString());
 
-            String stsql = "Select * FROM age_Sesiones where  Macaddresses='" + mMac + "'";
+            String stsql = "Select * FROM age_Sesiones where  Macaddresses='" + mMac + "' and Habilitado = 1 ";
 
             QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
             QueryBD queryBD = new QueryBD();
@@ -648,6 +691,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     int row = 0;
                     String titulo = "";
                     String texto = "";
+                    Boolean funcion = false;
                     Boolean iniciaTexto = false;
                     Boolean iniciaVoto = false;
                     int tiempoVotacion= 0;
@@ -661,6 +705,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                             iniciaTexto = rs.getBoolean("IniciaTexto");
                             iniciaVoto = rs.getBoolean("InicioVoto");
                             tiempoVotacion = rs.getInt("TiempoVotacion");
+                            funcion = rs.getBoolean("Funcion");
                             limpiar = rs.getBoolean("Limpiar");
                             apagar = rs.getBoolean("Apagar");
                             Log.d(LOG_TAG, " leerBandera success: " + titulo + " - " + texto + " - " + iniciaTexto + " - " + iniciaVoto);
@@ -668,6 +713,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                         final int finalRow = row;
                         final String finalTitulo = titulo;
                         final String finalTexto = texto;
+                        final Boolean finalFuncion = funcion;
                         final Boolean finalIniciaTexto = iniciaTexto;
                         final Boolean finalIniciaVoto = iniciaVoto;
                         final int finaltiempoVotacion =  tiempoVotacion;
@@ -676,6 +722,16 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 if (finalRow == 1) {
+                                    Log.d(LOG_TAG, " abreviacion mAbreviacion"+ mAbreviacion);
+                                    if(finalFuncion){
+                                            Log.d(LOG_TAG, " abreviacion funcion verdad: ");
+                                            mTextConcejal.setText(getString(R.string.presidente));
+                                    }else{
+                                        Log.d(LOG_TAG, "abreviacion funcion false: ");
+                                        mTextConcejal.setText(mAbreviacion);
+                                        }
+
+
                                     if(finalIniciaTexto && !mTextosInicializados){
                                         mTextosInicializados=true;// Se ponee en true luego de leer los primero textos
                                     }
@@ -685,8 +741,8 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                                         collapsingToolbarLayout.setTitle(finalTitulo);
                                         mTextParrafo.setText(Html.fromHtml(finalTexto));
                                     } else {
-                                        collapsingToolbarLayout.setTitle("Esperando");
-                                        mTextParrafo.setText("Aqui se pueden mostrar otros datos");
+                                        collapsingToolbarLayout.setTitle(mEsperaTitulo);
+                                        mTextParrafo.setText(mEsperaTexto);
                                     }
                                     if(finalIniciaTexto){
                                         indicarTextosLeidos();
@@ -785,24 +841,31 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     int row = 0;
 
                     int noVoto= 0;
+                    String titulo="";
+                    String texto="";
 
                     try {
                         while (rs.next()) {
                             row++;
 
                             noVoto = rs.getInt("Sesiones_SinVoto");
+                           titulo=rs.getString("Sesiones_Espera_Titulo");
+                           texto=rs.getString("Sesiones_Espera_Texto");
 
                             Log.d(LOG_TAG, " leerParametros: " + noVoto);
                         }
                         final int finalRow = row;
-
                         final int finaltiempoVotacion =  noVoto;
+                        final String finalTitulo=titulo;
+                        final String finalTexto=texto;
 
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 if (finalRow == 1) {
 
                                 mTratamientoAbstencion =finaltiempoVotacion;
+                                mEsperaTitulo=finalTitulo;
+                                mEsperaTexto=finalTexto;
                             }
                         }});
 
@@ -847,9 +910,12 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             try {
                 pst = conn.prepareStatement("UPDATE age_Sesiones "
                         + " SET IniciaTexto= ?"
-                        + "WHERE  Macaddresses='" + mMac + "'");
+                        + "WHERE  Macaddresses='" + mMac + "'"
+                        +  "and Habilitado = ? "
+                );
 
                 pst.setBoolean(1, false);
+                pst.setBoolean(2, true);
 
                 UpdateBD updateBD = new UpdateBD();
                 UpdateBD.OnUpdateResult onUpDateResult;
@@ -860,7 +926,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 mActualizandoDatosTextos=false;
-                                Toast.makeText(getApplicationContext(), " indicarTextosLeidos: con Éxito", Toast.LENGTH_LONG).show();
+//                                Toast.makeText(getApplicationContext(), " indicarTextosLeidos: con Éxito", Toast.LENGTH_LONG).show();
 
                             }
                         });
@@ -915,7 +981,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 mActualizandoDatosTextos=false;
-                                Toast.makeText(getApplicationContext(), " indicarLimpiarLeido: con Éxito", Toast.LENGTH_LONG).show();
+//                                Toast.makeText(getApplicationContext(), " indicarLimpiarLeido: con Éxito", Toast.LENGTH_LONG).show();
 
                             }
                         });
@@ -957,7 +1023,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             try {
                 pst = conn.prepareStatement("UPDATE age_Sesiones "
                         + " SET InicioVoto= ?, ResultadoVoto=? , TiempoInicio=?, TiempoFin=?"
-                        + "WHERE  Macaddresses='" + mMac + "'");
+                        + "WHERE  Macaddresses='" + mMac + "' and Habilitado= ? ");
 
                 pst.setBoolean(1, false);
                 pst.setInt(2, voto);
@@ -965,6 +1031,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 //                Log.d(LOG_TAG, " Timestamp:" + System.currentTimeMillis());
                 pst.setString(3,Long.toString( mtiempoInicioVotacion));//tiempoInicio
                 pst.setString(4,Long.toString( System.currentTimeMillis()));//tiempoFin
+                pst.setBoolean(5,true);// Habilitado en Verdadero
 
                 UpdateBD updateBD = new UpdateBD();
                 UpdateBD.OnUpdateResult onUpDateResult;
@@ -976,7 +1043,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                             public void run() {
                                 mActualizandoDatosTimerVoto=false;
 
-                                Toast.makeText(getApplicationContext(), " votar: con Éxito", Toast.LENGTH_LONG).show();
+//                                Toast.makeText(getApplicationContext(), " votar: con Éxito", Toast.LENGTH_LONG).show();
 
                             }
                         });
@@ -1009,7 +1076,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 
     }
 
-    public void sacarConcejalEnSesion() {
+    public void sacarConcejalEnSesionbkp() {
 
         Log.d(LOG_TAG, " sacarConcejalEnSesion:");
         if (conn != null) {
@@ -1068,6 +1135,156 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             }
 
         } else {
+            Toast.makeText(getApplicationContext(), "Error: No Hay conextion a la base", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void ingresaConcejalEnSesion() {
+
+//        Log.d(LOG_TAG, " ingresaConcejalEnSesion:" + conn.toString());
+        if (conn != null) {
+            Log.d(LOG_TAG, " ingresaConcejalEnSesion-connection:" + conn.toString());
+            try {
+                PreparedStatement pst = conn.prepareStatement("update age_Sesiones"
+                        + " SET Estado = ? "
+//                        + "  Habilitado = ? "
+                        + " WHERE  Macaddresses = ? ");
+
+
+
+
+
+                pst.setBoolean(1, true);//Titulo
+//                pst.setString(2, "Texto update" );
+                pst.setString(2, getMacAddr());//iniciaVoto
+                Log.d(LOG_TAG, " ingresaConcejalEnSesion-connection update:");
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  ingresaConcejalEnSesion: success: " + cantidadLineasModificadas);
+//                        runOnUiThread(new Runnable() {
+//                            public void run() {
+//
+//                                Toast.makeText(getApplicationContext(), "ingresaConcejalEnSesion correctamente", Toast.LENGTH_LONG).show();
+//                                Intent intent = new Intent(getApplication(), VotacionActivity.class);
+//                                intent.putExtra("concejal",mConcejalAsignado.getText().toString());
+//
+//                                startActivity(intent);
+//
+//                            }
+//                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(final String errorMessage) {
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(getApplicationContext(), " ingresaConcejalEnSesion: " + errorMessage, Toast.LENGTH_LONG).show();
+                                Log.d(LOG_TAG, "  ingresaConcejalEnSesion: onResultFail: " + errorMessage);
+
+                            }
+                        });
+                    }
+
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+                Log.d(LOG_TAG, " ingresaConcejalEnSesion  pst.executeUpdate");
+
+
+            } catch (SQLException e) {
+                Log.d(LOG_TAG, " ingresaConcejalEnSesion  SQLException" + e.getMessage());
+                e.printStackTrace();
+            }
+
+        } else {Log.d(LOG_TAG, " ingresaConcejalEnSesion  catch  conn==null");}
+
+
+    }
+
+
+
+    public void sacarConcejalEnSesion() {
+
+        Log.d(LOG_TAG, " sacarConcejalEnSesion1:");
+        if (conn != null) {
+
+
+                Log.d(LOG_TAG, " sacarConcejalEnSesion-connection:" + conn.toString());
+                try {
+                    PreparedStatement pst = conn.prepareStatement("update age_Sesiones"
+                            + " SET Estado = ? , "
+                            + "  Apagar = ? , "
+                            + "  Habilitado = ? "
+                            + " WHERE  Macaddresses = ? ");
+
+
+
+
+
+                    pst.setBoolean(1, false);//Estado
+                    pst.setBoolean(2, false);//Apagar
+                    pst.setBoolean(3, false);//Habilitado
+
+                    pst.setString(4, getMacAddr());//iniciaVoto
+                    Log.d(LOG_TAG, " sacarConcejalEnSesion-connection update:");
+
+                    UpdateBD updateBD = new UpdateBD();
+                    UpdateBD.OnUpdateResult onUpDateResult;
+
+                    onUpDateResult = new UpdateBD.OnUpdateResult() {
+                        @Override
+                        public void onResultSuccess(int cantidadLineasModificadas) {
+                            Log.d(LOG_TAG, "  sacarConcejalEnSesion: onResultSuccess: " + cantidadLineasModificadas);
+
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    finish();
+
+                                }
+                            });
+
+                        }
+
+                        @Override
+                        public void onResultFail(final String errorMessage) {
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+                                    Toast.makeText(getApplicationContext(), " sacarConcejalEnSesion: " + errorMessage, Toast.LENGTH_LONG).show();
+                                    Log.d(LOG_TAG, "  sacarConcejalEnSesion: onResultFail: " + errorMessage);
+
+                                }
+                            });
+                        }
+
+                    };
+                    updateBD.setOnResultListener(onUpDateResult);
+                    ;
+                    if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                        updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                    } else {
+                        updateBD.execute(pst);
+                    }
+                    Log.d(LOG_TAG, " sacarConcejalEnSesion  pst.executeUpdate");
+
+
+                } catch (SQLException e) {
+                    Log.d(LOG_TAG, " sacarConcejalEnSesion  SQLException" + e.getMessage());
+                    e.printStackTrace();
+                }
+
+
+            } else {
             Toast.makeText(getApplicationContext(), "Error: No Hay conextion a la base", Toast.LENGTH_SHORT).show();
         }
     }

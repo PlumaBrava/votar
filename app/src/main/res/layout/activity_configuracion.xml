@@ -32,6 +32,11 @@
         android:tint="@color/colorVotoPositivo"
         />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_version"
+        android:layout_gravity="start"/>
 
     <!-- Login progress -->
     <ProgressBar
@@ -54,39 +59,41 @@
             android:orientation="vertical">
 
 
-        <LinearLayout
-            android:id="@+id/mac_registo_form"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/mac_registo_form"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-            <android.support.design.widget.TextInputLayout
-                android:layout_width="200dp"
-                android:layout_height="wrap_content">
+                <android.support.design.widget.TextInputLayout
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content">
 
-                <EditText
-                    android:id="@+id/mac"
+                    <EditText
+                        android:id="@+id/mac"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:enabled="false"
+                        android:hint="@string/mac"
+                        android:maxLines="1"
+                        android:singleLine="true" />
+
+                </android.support.design.widget.TextInputLayout>
+
+                <Button
+                    android:id="@+id/botonRegistarTablet"
+                    style="?android:textAppearanceSmall"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:enabled="false"
-                    android:hint="@string/mac"
-                    android:maxLines="1"
-                    android:singleLine="true" />
-
-            </android.support.design.widget.TextInputLayout>
-
-            <Button
-                android:id="@+id/botonRegistarTablet"
-                style="?android:textAppearanceSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/boton_registrarTablet"
-                android:textStyle="bold" />
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/botondrawable"
+                    android:text="@string/boton_registrarTablet"
+                    android:textColor="@color/color_Texto"
+                    android:textStyle="bold"
+                    tools:ignore="ButtonStyle"/>
 
 
-
-        </LinearLayout>
+            </LinearLayout>
 
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -96,10 +103,10 @@
                     android:id="@+id/imei"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="false"
                     android:hint="@string/imei"
                     android:maxLines="1"
-                    android:enabled="false"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -112,10 +119,10 @@
                     android:id="@+id/serie"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="false"
                     android:hint="@string/Serie"
                     android:maxLines="1"
-                    android:enabled="false"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -128,12 +135,13 @@
                     android:id="@+id/dispositivo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="true"
                     android:hint="@string/Dispositivo"
                     android:maxLines="1"
-                    android:enabled="true"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
+
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="32dp" />
@@ -146,10 +154,10 @@
                     android:id="@+id/ip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="true"
                     android:hint="@string/ip"
                     android:maxLines="1"
-                    android:enabled="true"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -161,10 +169,10 @@
                     android:id="@+id/nombreBase"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="true"
                     android:hint="@string/NombreBase"
                     android:maxLines="1"
-                    android:enabled="true"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -176,10 +184,10 @@
                     android:id="@+id/userBase"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:enabled="true"
                     android:hint="@string/userBase"
                     android:maxLines="1"
-                    android:enabled="true"
-                    android:singleLine="true"  />
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -191,10 +199,11 @@
                     android:id="@+id/passwordBase"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/PasswordBase"
-                    android:maxLines="1"
                     android:enabled="true"
-                    android:singleLine="true"  />
+                    android:hint="@string/PasswordBase"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:singleLine="true" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -204,6 +213,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:background="@drawable/botondrawable"
+                android:textColor="@color/color_Texto"
                 android:text="@string/boton_registrarBase"
                 android:textStyle="bold" />
 
@@ -218,8 +229,6 @@
                 android:textStyle="bold" />
 
         </LinearLayout>
-
-
 
 
     </ScrollView>

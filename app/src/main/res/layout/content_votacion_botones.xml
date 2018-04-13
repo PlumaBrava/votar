@@ -42,27 +42,40 @@
         app:layout_constraintTop_toTopOf="@id/pbarProgreso" />
     <!--android:layout_marginTop="240dp"-->
     <!--app:layout_constraintBottom_toBottomOf="parent"-->
-    <TextView
+    <Button
         android:id="@+id/votoSeleccionado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:gravity="center_horizontal"
-        android:radius="15dp"
-        android:shadowRadius="1.5"
+        android:layout_width="300dp"
+        android:layout_height="90dp"
+        android:textSize="30dp"
 
-        android:textSize="64dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintEnd_toStartOf="parent"
+    app:layout_constraintHorizontal_bias="0.5"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+      />
+
+    <!--android:background="@drawable/boton_voto"-->
+    <!--android:text="result"-->
+    <!--android:shadowRadius="1.5"-->
+    <!--android:radius="15dp"-->
+    <!--android:layout_gravity="center_horizontal"-->
+    <!--android:background="@drawable/boton_voto"-->
+    <!--android:textSize="64dp"-->
+
+    <!--android:background="@drawable/boton_voto"-->
+    <!--android:backgroundTint="@color/colorVotoNegativo"-->
+
+
+
 
     <Button
         android:id="@+id/VotoNegativo"
-        android:layout_width="168dp"
-        android:layout_height="wrap_content"
+        android:layout_width="280dp"
+        android:layout_height="80dp"
+        android:textSize="54dp"
         android:layout_marginBottom="16dp"
         android:layout_weight="1"
         android:background="@drawable/boton_voto"
@@ -80,8 +93,9 @@
 
     <Button
         android:id="@+id/VotoPositivo"
-        android:layout_width="168dp"
-        android:layout_height="wrap_content"
+        android:layout_width="280dp"
+        android:layout_height="80dp"
+        android:textSize="54dp"
         android:layout_marginBottom="16dp"
         android:layout_weight="3"
         android:background="@drawable/boton_voto"
@@ -97,8 +111,9 @@
 
     <Button
         android:id="@+id/confirmaVotoPositivo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="280dp"
+        android:layout_height="80dp"
+        android:textSize="28dp"
         android:layout_marginTop="16dp"
         android:background="@drawable/boton_voto"
         android:backgroundTint="@color/colorVotoPositivo"
@@ -107,12 +122,13 @@
         app:layout_constraintHorizontal_bias="0.503"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cancelarVoto" />
+        app:layout_constraintBottom_toTopOf="@id/cancelarVoto" />
 
     <Button
         android:id="@+id/confirmaVotoNegativo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="280dp"
+        android:layout_height="80dp"
+        android:textSize="28dp"
         android:layout_marginTop="16dp"
         android:background="@drawable/boton_voto"
         android:backgroundTint="@color/colorVotoNegativo"
@@ -121,18 +137,19 @@
         app:layout_constraintHorizontal_bias="0.503"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cancelarVoto" />
+        app:layout_constraintBottom_toTopOf="@+id/cancelarVoto" />
 
     <Button
         android:id="@+id/cancelarVoto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="64dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/ic_cancel_black_24dp"
+        android:text="Cancelar"
+        android:textColor="@color/color_Texto"
+        android:layout_marginTop="128dp"
+        android:background="@drawable/boton_cancelar_voto"
         app:layout_constraintEnd_toEndOf="@+id/pbarProgreso"
         app:layout_constraintTop_toBottomOf="@+id/pbarProgreso" />
+    <!--android:background="@drawable/ic_close_cross"-->
     <!--android:text="@string/boton_Cancelar"-->
     <!--android:backgroundTint="@color/colorVotoNegativo"-->
 
@@ -140,7 +157,8 @@
         android:id="@+id/concejal"
         android:layout_width="305dp"
         android:layout_height="80dp"
-        android:background="@color/colorPrimaryDark"
+        android:backgroundTint="@color/colorPrimaryDark"
+        android:background="@drawable/boton_voto"
         android:gravity="center"
         android:text="TextView Conc"
         android:textColor="@color/color_Texto"

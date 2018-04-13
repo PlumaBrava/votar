@@ -46,13 +46,10 @@ public class ConnextionBD  extends AsyncTask<Void, Integer, Connection> {
         try {
 
             Class.forName("net.sourceforge.jtds.jdbc.Driver").newInstance();
-//             mi pc 192.168.0.34
-//             mi pc 192.168.0.17
-//             Bulnes 192.168.0.6
 
 
             connection = DriverManager.getConnection("jdbc:jtds:sqlserver://"+ip+";databaseName="+nombreBase+";user="+userBase+";password="+passwordBase);
-//            connection = DriverManager.getConnection("jdbc:jtds:sqlserver://192.168.0.6;databaseName=HCD;user=hcd;password=d4k4r");
+
             Log.d(LOG_TAG, "conextionBD()-connection:" + connection.toString());
             onConnectionResult.onResultSuccess(connection);
             Log.d(LOG_TAG, "conextionBD(): onResultSuccess ejecutado");

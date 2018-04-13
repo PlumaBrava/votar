@@ -19,6 +19,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -50,7 +51,8 @@ public class ConfiguracionActivity extends AppCompatActivity {
     private ImageView mIconoBaseDesonectada;
     private PowerManager mPowerManager;
     private PowerManager.WakeLock mWakeLock;
-
+//    private PowerManager mPowerManager;
+//    private PowerManager.WakeLock mWakeLock;
     /**
      * A dummy authentication store containing known user names and passwords.
      * TODO: remove after connecting to a real authentication system.
@@ -94,7 +96,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
         mNombreBase = (EditText) findViewById(R.id.nombreBase);
         mUserBase = (EditText) findViewById(R.id.userBase);
         mPasswordBase = (EditText) findViewById(R.id.passwordBase);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 //        mPasswordView = (EditText) findViewById(R.id.password);
 //        mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 //            @Override
@@ -218,7 +220,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
         mNombreBase.setText(sharedPref.getString(getString(R.string.preference_NombreBase), getString(R.string.preference_NombreBase_default)));
         mUserBase.setText(sharedPref.getString(getString(R.string.preference_userBase), getString(R.string.preference_userBase_default)));
         mPasswordBase.setText(sharedPref.getString(getString(R.string.preference_PasswordBase), getString(R.string.preference_PasswordBase_default)));
-
+        mDispositivo.setText((sharedPref.getString(getString(R.string.preference_nombreDispositivo), getString(R.string.preference_nombreDispositivo_default))));
     }
 
 
@@ -389,13 +391,7 @@ public class ConfiguracionActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             public void run() {
 
-//                                if (finalRow == 1) {
-//                                    mConcejalAsignado.setText(finalConcejal);
-//                                } else if (finalRow > 1) {
-//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalMultiple));
-//                                } else if (finalRow == 0) {
-//                                    mConcejalAsignado.setText(getString(R.string.asignacionConcejalSinAsignar));
-//                                }
+
                             }
                         });
 
@@ -419,14 +415,19 @@ public class ConfiguracionActivity extends AppCompatActivity {
                 }
             };
             queryBD.setOnResultListener(onQueryResult);
-            queryBD.execute(queryData);
 
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
             Log.d(LOG_TAG, " leerSecuenciaDispositivos: qwuery");
 
 
-        }
+        }else{
         Log.d(LOG_TAG, " leerSecuenciaDispositivos  conn == null");
         Toast.makeText(getApplicationContext(), "Error:" + "Sin conexion", Toast.LENGTH_LONG).show();
+        }
     }
 
     public void registar() {
@@ -458,6 +459,11 @@ public class ConfiguracionActivity extends AppCompatActivity {
                         IncrementarSecuenciaDispositivos();
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = sharedPref.edit();
+                                editor.putString(getString(R.string.preference_nombreDispositivo),mDispositivo.getText().toString());
+                                editor.commit();
+
                                 Toast.makeText(getApplicationContext(), "registar correcto", Toast.LENGTH_LONG).show();
                             }
                         });
@@ -476,7 +482,12 @@ public class ConfiguracionActivity extends AppCompatActivity {
                     }
                 };
                 insertBD.setOnResultListener(onInsertResult);
-                insertBD.execute(pst);
+//                insertBD.execute(pst);
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    insertBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    insertBD.execute(pst);
+                }
 
 
             } catch (SQLException e) {
@@ -523,7 +534,10 @@ public class ConfiguracionActivity extends AppCompatActivity {
                         Log.d(LOG_TAG, "  updateRegistro: success: " + cantidadLineasModificadas);
                         runOnUiThread(new Runnable() {
                             public void run() {
-
+                                SharedPreferences sharedPref = getSharedPreferences("Mis Preferencias", Context.MODE_PRIVATE);
+                                SharedPreferences.Editor editor = sharedPref.edit();
+                                editor.putString(getString(R.string.preference_nombreDispositivo),mDispositivo.getText().toString());
+                                editor.commit();
                                 Toast.makeText(getApplicationContext(), " updateRegistro: con Éxito", Toast.LENGTH_LONG).show();
 
                             }
@@ -544,11 +558,14 @@ public class ConfiguracionActivity extends AppCompatActivity {
                 };
                 updateBD.setOnResultListener(onUpDateResult);
                 ;
-                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
-                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
-                } else {
-                    updateBD.execute(pst);
-                }
+
+//                    updateBD.execute(pst);
+                    if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                        updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                    } else {
+                        updateBD.execute(pst);
+                    }
+
                 Log.d(LOG_TAG, " updateRegistro  pst.executeUpdate");
 
 
@@ -701,17 +718,29 @@ public class ConfiguracionActivity extends AppCompatActivity {
                 }
             };
             queryBD.setOnResultListener(onQueryResult);
-            queryBD.execute(queryData);
+//            queryBD.execute(queryData);
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
 
             Log.d(LOG_TAG, " buscarMacEnDispositivos: qwuery");
 
 
+        }else {
+            Log.d(LOG_TAG, " buscarMacEnDispositivos  conn == null");
+            Toast.makeText(getApplicationContext(), "Error:" + "Sin conexion", Toast.LENGTH_LONG).show();
         }
-        Log.d(LOG_TAG, " buscarMacEnDispositivos  conn == null");
-        Toast.makeText(getApplicationContext(), "Error:" + "Sin conexion", Toast.LENGTH_LONG).show();
     }
     @TargetApi(21) //Suppress lint error for PROXIMITY_SCREEN_OFF_WAKE_LOCK
     public  void apagar(){
+        Log.v("apagar", "OFF!");
+//        Intent i = new Intent("android.intent.action.ACTION_REQUEST_SHUTDOWN");
+//        i.putExtra("android.intent.extra.KEY_CONFIRM", false);
+//        i.setFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+//        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        startActivity(i);
 //        Intent shutdown = new Intent("android.intent.action.ACTION_REQUEST_SHUTDOWN");
 ////        shutdown.putExtra("android.intent.extra.KEY_CONFIRM", true);
 ////        shutdown.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -727,18 +756,27 @@ public class ConfiguracionActivity extends AppCompatActivity {
 //        } catch (Exception ex) {
 //            ex.printStackTrace();
 //        }
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        Log.v("apagar params",params.toString());
+        params.flags |= WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        params.screenBrightness = 0.1f;
+        getWindow().setAttributes(params);
 
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+//        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//        mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+//        mWakeLock.acquire();
 
-            // turn off screen
+//            // turn off screen
             Log.v("apagar", "OFF!");
-        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-//            mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+//        mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+////            mWakeLock = mPowerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "tag");
+////            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tag");
+////            mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "tag");
 //            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tag");
-//            mWakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "tag");
-            mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tag");
-            mWakeLock.acquire();
-
+//            mWakeLock.acquire();
+//
 
 
 

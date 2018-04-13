@@ -9,12 +9,12 @@
     <uses-permission android:name="android.permission.ACTION_REQUEST_SHUTDOWN" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!--<uses-permission android:name="android.permission.WAKE_LOCK" />-->
     <!-- To auto-complete the email text field in the login form with the user's emails -->
     <!--android:roundIcon="@mipmap/ic_launcher_round"-->
     <application
         android:allowBackup="true"
-        android:icon="@drawable/hcdlogo2"
+        android:icon="@drawable/hdclogo"
         android:label="@string/app_name"
 
         android:supportsRtl="true"

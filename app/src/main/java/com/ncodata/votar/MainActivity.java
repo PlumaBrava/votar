@@ -14,12 +14,12 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -43,10 +43,6 @@ import static com.ncodata.votar.utils.SporteConf.getMacAddr;
 public class MainActivity extends AppCompatActivity {
     public static final String LOG_TAG = "MainActivity";
 
-    String IMEI_Number_Holder;
-    String device_unique_id;
-    String IMEI = null;
-    TelephonyManager telephonyManager;
 
     Connection conn = null;//Conexion a la base de datos. Al entrar a la actividad nos conectamos y al salir nos desconectamos.
     ConnextionBD connextionBD; //Tarea que se ejecuta en segundo plano para conseguir una conexion a la base
@@ -66,10 +62,9 @@ public class MainActivity extends AppCompatActivity {
     private Button mButtonIngresar;
     private Button mButtonSaveNewPassword;
     private InspectorBanderas1 mInspectorBanderas;
-    private int mNumeroConcejal;
-    private int mNumeroDispositivo;
-    private boolean mFfuncion;
-    View decorView;
+
+    private String mAbreviacion;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mProgressView = findViewById(R.id.registro_progress);
         mLoginFormView = findViewById(R.id.layout_password);
 
@@ -171,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         Log.d(LOG_TAG, "task onStart()");
         mInspectorBanderas = new InspectorBanderas1();
-//        mInspectorBanderas.execute();
+
         if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
             mInspectorBanderas.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         } else {
@@ -238,67 +233,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+//        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
-//    @Override
-//    public void onWindowFocusChanged(boolean hasFocus) {
-//        Log.d(LOG_TAG, " onSystemUiVisibilityChange  onWindowFocusChanged");
-//        decorView = getWindow().getDecorView();
-//// Hide both the navigation bar and the status bar.
-//// SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
-//// a general rule, you should design your app to hide the status bar whenever you
-//// hide the navigation bar.
-//        int uiOptions = (
-////                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-//                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-//                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-//                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | // hide nav bar
-//                        View.SYSTEM_UI_FLAG_FULLSCREEN |// hide status bar
-//                        View.SYSTEM_UI_FLAG_IMMERSIVE);
-//
-//
-//        decorView.setSystemUiVisibility(uiOptions);
-//        decorView.setOnSystemUiVisibilityChangeListener
-//                (new View.OnSystemUiVisibilityChangeListener() {
-//                    @Override
-//                    public void onSystemUiVisibilityChange(int visibility) {
-//                        Log.d(LOG_TAG, " onSystemUiVisibilityChange " );
-//                        // Note that system bars will only be "visible" if none of the
-//                        // LOW_PROFILE, HIDE_NAVIGATION, or FULLSCREEN flags are set.
-//                        // adjustments to your UI, such as showing the action bar or
-//                        // other navigational controls.
-//                        if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
-//                            // TODO: The system bars are visible. Make any desired
-//                            Log.d(LOG_TAG, " onSystemUiVisibilityChange View.SYSTEM_UI_FLAG_FULLSCREE" );
-//
-//// Hide both the navigation bar and the status bar.
-//// SYSTEM_UI_FLAG_FULLSCREEN is only available on Android 4.1 and higher, but as
-//// a general rule, you should design your app to hide the status bar whenever you
-//// hide the navigation bar.
-//                            int uiOptions1 = (
-//                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-////                                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
-//                                            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-//                                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | // hide nav bar
-//                                            View.SYSTEM_UI_FLAG_FULLSCREEN |// hide status bar
-//                                            View.SYSTEM_UI_FLAG_IMMERSIVE);
-//                            decorView.setSystemUiVisibility(uiOptions1);
-//
-//                        } else {
-//                            Log.d(LOG_TAG, " onSystemUiVisibilityChange View.SYSTEM_UI_FLAG_FULLSCREE NOT" );
-//                            // TODO: The system bars are NOT visible. Make any desired
-//
-//                            // adjustments to your UI, such as hiding the action bar or
-//                            // other navigational controls.
-//
-//                        }
-//                    }
-//                });
-//
-//        super.onWindowFocusChanged(hasFocus);
-//    }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -319,26 +257,29 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+// Cuando ingresa un concejal, se pone en true el campo estado de la tabla de sesiones.
+    // en el caso del presidentes (tiene el campo Funcion en true) la mac estará dos veces en esta tabla.
+    // Una como concejal y la otra como presidente.
+    // Cuando ingresa, prendemos las dos por tanto el where solo mira la mac y pone los estados en TRue para indicar que el concejal
+    // ingreso.
 
 
-    public void ingresaConcejalEnSesion(int numeroConcejal, int numeroDispositivo, boolean funcion, String mac) {
+    public void ingresaConcejalEnSesion(int numeroConcejal, int numeroDispositivo, final boolean funcion, String mac) {
 
         Log.d(LOG_TAG, " ingresaConcejalEnSesion:" + conn.toString());
         if (conn != null) {
             Log.d(LOG_TAG, " ingresaConcejalEnSesion-connection:" + conn.toString());
             try {
                 PreparedStatement pst = conn.prepareStatement("update age_Sesiones"
-                        + " SET Titulo = ? ,"
-                        + "  Texto = ? "
+                        + " SET Estado = ? "
                         + " WHERE  Macaddresses = ? ");
 
 
 
 
 
-                pst.setString(1, "Titulo update");//Titulo
-                pst.setString(2, "Texto update" );
-                pst.setString(3, mac);//iniciaVoto
+                pst.setBoolean(1, true);
+                pst.setString(2, mac);
                 Log.d(LOG_TAG, " ingresaConcejalEnSesion-connection update:");
 
                 UpdateBD updateBD = new UpdateBD();
@@ -351,9 +292,10 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             public void run() {
 
-                                Toast.makeText(getApplicationContext(), "ingresaConcejalEnSesion correctamente", Toast.LENGTH_LONG).show();
                                 Intent intent = new Intent(getApplication(), VotacionActivity.class);
                                 intent.putExtra("concejal",mConcejalAsignado.getText().toString());
+                                intent.putExtra("funcion",funcion);
+                                intent.putExtra("abreviacion",mAbreviacion);
 
                                 startActivity(intent);
 
@@ -461,8 +403,12 @@ public class MainActivity extends AppCompatActivity {
                     };
                 };
                 insertBD.setOnResultListener(onInsertResult);
-                insertBD.execute(pst);
-
+//                insertBD.execute(pst);
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    insertBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    insertBD.execute(pst);
+                }
 
             } catch (SQLException e) {
                 Log.d(LOG_TAG, " ingresaConcejalEnSesion error " + e.toString());
@@ -515,7 +461,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
                 updateBD.setOnResultListener(onUpDateResult);
-                updateBD.execute(pst);
+//                updateBD.execute(pst);
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
 
             } catch (SQLException e) {
                 Log.d(LOG_TAG, " modificarDato error " + e.toString());
@@ -523,9 +474,15 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
-        }
-        Toast.makeText(getApplicationContext(), "Sin conexion a la base", Toast.LENGTH_LONG).show();
+        } else {
+        Toast.makeText(getApplicationContext(), "Sin conexion a la base", Toast.LENGTH_LONG).show();}
     }
+
+
+    // Lee la tabla de Concejales_Dispositivos en donde se guarda con que mac se asoció a cada concejal
+    // y trae otros datos (nombre, abreviacion)
+    // estos datos luego se envían a la actividad de votación
+
 
     public void leerConsejalAsignado() {
         Log.d(LOG_TAG, " leerConsejalAsignado:");
@@ -533,7 +490,7 @@ public class MainActivity extends AppCompatActivity {
 
             String mac = getMacAddr();
 //            /En el stsql se puede agregar cualquier consulta SQL deseada.
-            String stsql = "Select *, age_Concejales.NumConcejal, age_Concejales.Concejal as NombreConcejal FROM age_Concejales_Dispositivos " +
+            String stsql = "Select *, age_Concejales.NumConcejal, age_Concejales.Concejal as NombreConcejal, age_Concejales.Abreviacion as Abreviacion FROM age_Concejales_Dispositivos " +
                     "INNER JOIN age_Concejales ON age_Concejales_Dispositivos.NumConcejal= age_Concejales.NumConcejal " +
                     "where Macaddresses='" + mac + "'";
             QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
@@ -542,21 +499,26 @@ public class MainActivity extends AppCompatActivity {
             onQueryResult = new QueryBD.OnQueryResult() {
                 @Override
                 public void onResultSuccess(final ResultSet rs) {
-                    Log.d(LOG_TAG, " query success: " + rs);
+                    Log.d(LOG_TAG, "leerConsejalAsignado query success: " + rs);
                     int row = 0;
                     String concejal = "";
+                    String abreviacion = "";
                     try {
                         while (rs.next()) {
                             row++;
                             concejal = rs.getString("NombreConcejal");
-                            Log.d(LOG_TAG, "concejal: " + rs.getString("NombreConcejal"));
+                            abreviacion= rs.getString("Abreviacion");
+                            Log.d(LOG_TAG, "leerConsejalAsignado concejal: " + rs.getString("NombreConcejal"));
+                            Log.d(LOG_TAG, "leerConsejalAsignado abreviacion: " + abreviacion);
 //                            Log.d(LOG_TAG, "NumDispositivo: " + rs.getString("NumDispositivo") + "- serie: " + rs.getString("Serie") + " - Macaddresses:  " + rs.getString("Macaddresses"));
 
                         }
                         final int finalRow = row;
                         final String finalConcejal = concejal;
+                        final String finalAbreviacion = abreviacion;
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                mAbreviacion=finalAbreviacion;
                                 if (finalRow == 1) {
                                     mConcejalAsignado.setText(finalConcejal);
                                 } else if (finalRow > 1) {
@@ -576,15 +538,22 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onResultFail(String errorMessage) {
-                    Log.d(LOG_TAG, " executeUpdate onResultFail: " + errorMessage);
+                    Log.d(LOG_TAG, "leerConsejalAsignado executeUpdate onResultFail: " + errorMessage);
                 }
             };
             queryBD.setOnResultListener(onQueryResult);
-            queryBD.execute(queryData);
 
-            Log.d(LOG_TAG, " leerDato: qwuery");
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
+            Log.d(LOG_TAG, " leerConsejalAsignado: qwuery");
 
 
+        } else {
+
+            Log.d(LOG_TAG, " leerConsejalAsignado: sin conexion a la base");
         }
     }
 
@@ -607,38 +576,14 @@ public class MainActivity extends AppCompatActivity {
         } else {
             secetPassword = encriptadoJJ(pass);
         }
-//
-//            try {
-//                secret = generateKey();
-//                secetPassword = String.valueOf(encryptMsg(pass, secret));
-//                Log.d(LOG_TAG, " secetPassword " + secetPassword);
-//            } catch (NoSuchAlgorithmException e) {
-//                e.printStackTrace();
-//            } catch (NoSuchPaddingException e) {
-//                e.printStackTrace();
-//            } catch (InvalidKeyException e) {
-//                e.printStackTrace();
-//            } catch (InvalidParameterSpecException e) {
-//                e.printStackTrace();
-//            } catch (IllegalBlockSizeException e) {
-//                e.printStackTrace();
-//            } catch (BadPaddingException e) {
-//                e.printStackTrace();
-//            } catch (UnsupportedEncodingException e) {
-//                e.printStackTrace();
-//            } catch (InvalidKeySpecException e) {
-//                e.printStackTrace();
-//            }
-//
-//            decryptMsg(byte[] toDecrypt, secret));
-//    }
+
 
 
         if (conn != null) {
 
-
 //            /En el stsql se puede agregar cualquier consulta SQL deseada.
             Log.d(LOG_TAG, " userLoginTask:secetPassword " + secetPassword);
+
             String stsql = "Select * FROM age_Concejales_Dispositivos where Macaddresses='" + mac + "' and Clave='" + secetPassword + "'";
             QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
             QueryBD queryBD = new QueryBD();
@@ -657,8 +602,6 @@ public class MainActivity extends AppCompatActivity {
 
                         while (rs.next()) {
                             rows++;
-//                            Log.d(LOG_TAG, "NumDispositivo: " + rs.getString("NumDispositivo") + "- serie: " + rs.getString("Serie") + " - Macaddresses:  " + rs.getString("Macaddresses"));
-
                             numeroConcejal = rs.getInt("NumConcejal");
                             numeroDispositivo = rs.getInt("NumDispositivo");
                             funcion = rs.getBoolean("Funcion");
@@ -704,8 +647,6 @@ public class MainActivity extends AppCompatActivity {
                                     mIntentosLogin++;
                                     if (mIntentosLogin >= getResources().getInteger(R.integer.IntentosLogin)) {
                                         Log.d(LOG_TAG, "mIntentosLogin mayor" + mIntentosLogin);
-//                                        Snackbar.make(mLoginFormView, getText(R.string.password_Supero_Cantidad_Intentos_Texto), Snackbar.LENGTH_LONG)
-//                                                .setAction("Action", null).show();
                                         new AlertDialog.Builder(MainActivity.this).setTitle(getText(R.string.password_Supero_Cantidad_Intentos_Titulo))
                                                 .setMessage(getText(R.string.password_Supero_Cantidad_Intentos_Texto))
                                                 .setPositiveButton(getText(R.string.password_Supero_Cantidad_OK),
@@ -716,13 +657,6 @@ public class MainActivity extends AppCompatActivity {
                                                                 dialog.dismiss();
                                                             }
                                                         })
-//                    .setNegativeButton("NO", new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            // Do nothing
-//                            dialog.dismiss();
-//                        }
-//                    })
                                                 .create()
                                                 .show();
 
@@ -746,12 +680,20 @@ public class MainActivity extends AppCompatActivity {
                 }
             };
             queryBD.setOnResultListener(onQueryResult);
-            queryBD.execute(queryData);
+
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
 
             Log.d(LOG_TAG, " UserLoginTask: qwuery");
 
 
+        }else {
+            Log.d(LOG_TAG, " UserLoginTask: sin conexion a la base");
         }
+
 
     }
 
@@ -898,30 +840,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d(LOG_TAG, " savePasswordTask " + mac + " " + password);
         String secetPassword = encriptadoJJ(password);
 
-//        SecretKey secret = null;
-//        String secetPassword="";
-//        try {
-//            secret = generateKey();
-//            secetPassword= String.valueOf(encryptMsg(password, secret));
-//            Log.d(LOG_TAG, " secetPassword " +secetPassword);
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        } catch (NoSuchPaddingException e) {
-//            e.printStackTrace();
-//        } catch (InvalidKeyException e) {
-//            e.printStackTrace();
-//        } catch (InvalidParameterSpecException e) {
-//            e.printStackTrace();
-//        } catch (IllegalBlockSizeException e) {
-//            e.printStackTrace();
-//        } catch (BadPaddingException e) {
-//            e.printStackTrace();
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }catch (InvalidKeySpecException e) {
-//            e.printStackTrace();
-//        }
-
 
         if (conn != null) {
             try {
@@ -961,13 +879,20 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
                 updateBD.setOnResultListener(onUpDateResult);
-                updateBD.execute(pst);
+
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
 
             } catch (SQLException e) {
                 Log.d(LOG_TAG, " SavePasswordTask error " + e.toString());
                 Toast.makeText(getApplicationContext(), "Error:" + e.getMessage().toString(), Toast.LENGTH_LONG).show();
 
             }
+
+        } else {
             Toast.makeText(getApplicationContext(), "Sin conexion a la base", Toast.LENGTH_LONG).show();
         }
 
@@ -996,7 +921,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Boolean doInBackground(Void... params) {
 
-//            for (int i = 1900; i >= 0; i--) {
+
             while (true) {
 
                 leerBanderas1();
@@ -1012,18 +937,22 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Boolean result) {
-//            mButtonIngresar.setVisibility(View.VISIBLE);
-//            mPassword.setVisibility(View.VISIBLE);
 
-            if (result)
-                Toast.makeText(MainActivity.this, "Tarea Inspeccion finalizada!", Toast.LENGTH_SHORT).show();
+            if (result){
+//                Toast.makeText(MainActivity.this, "Tarea Inspeccion finalizada!", Toast.LENGTH_SHORT).show();
+        }
         }
 
         @Override
         protected void onCancelled() {
-            Toast.makeText(MainActivity.this, "Tarea Inspeccion cancelada!", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(MainActivity.this, "Tarea Inspeccion cancelada!", Toast.LENGTH_SHORT).show();
         }
     }
+
+
+    // Lee los campos de la tabla de sesiones cada un segundo.
+    // consulta por mac y hablitado en true. para tomar un solo el caso para el presidente
+
 
     private void leerBanderas1() {
 
@@ -1039,7 +968,8 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(LOG_TAG, "leerBandera: conn-- " + conn.toString());
 
-            String stsql = "Select * FROM age_Sesiones where  Macaddresses='" + getMacAddr() + "'";
+            String stsql = "Select * FROM age_Sesiones where  Macaddresses = '" + getMacAddr() + "' and Habilitado = 1 ";
+
 
             QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
             QueryBD queryBD = new QueryBD();
@@ -1048,6 +978,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResultSuccess(final ResultSet rs) {
                     Log.d(LOG_TAG, " leerBandera success: " + rs);
+                    Log.d(LOG_TAG, " leerBandera success: " + rs.toString());
                     int row = 0;
                     String titulo = "";
                     String texto = "";
@@ -1078,17 +1009,30 @@ public class MainActivity extends AppCompatActivity {
                         final Boolean finalApagar =  apagar;
                         runOnUiThread(new Runnable() {
                             public void run() {
-                                mVersion.setText("row:"+finalRow);
+
                                 if (finalRow == 1) {
-                                    mVersion.setText("row:"+finalRow +"visible");
-                                    mButtonIngresar.setVisibility(View.VISIBLE);
+
+                                    if(mButtonSaveNewPassword.getVisibility()== View.VISIBLE){
+                                        mButtonIngresar.setVisibility(View.GONE);}
+                                        else{mButtonIngresar.setVisibility(View.VISIBLE);}
+
+
                                     mPassword.setVisibility(View.VISIBLE);
                                     mPasswordWidget.setVisibility(View.VISIBLE);
                                 } else{
-                                    mButtonIngresar.setVisibility(View.GONE);
-                                    mPassword.setVisibility(View.GONE);
-                                    mPasswordWidget.setVisibility(View.GONE);
-                                    mVersion.setText("row:"+finalRow +"invisible");
+
+
+                                    if(mConcejalAsignado.getText().equals(getResources().getString(R.string.asignacionConcejalSinAsignar))){
+                                        mButtonIngresar.setVisibility(View.VISIBLE);
+                                        mPassword.setVisibility(View.VISIBLE);
+                                        mPasswordWidget.setVisibility(View.VISIBLE);
+                                    }else {
+                                        mButtonIngresar.setVisibility(View.GONE);
+                                        mPassword.setVisibility(View.GONE);
+                                        mPasswordWidget.setVisibility(View.GONE);
+                                    }
+
+
                                 }
                                     if(finalApagar){   }
                         }});
@@ -1102,7 +1046,7 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onResultFail(String errorMessage) {
-                    Log.d(LOG_TAG, " executeUpdate onResultFail: " + errorMessage);
+                    Log.d(LOG_TAG, " leerBandera executeUpdate onResultFail: " + errorMessage);
                 }
             };
             queryBD.setOnResultListener(onQueryResult);

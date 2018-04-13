@@ -13,7 +13,7 @@
 
     <translate
 
-        android:fromYDelta="-100%p"
+        android:fromYDelta="-10%p"
         android:toYDelta="0%p"
         android:interpolator="@android:anim/accelerate_interpolator"
         android:duration="1000" />
