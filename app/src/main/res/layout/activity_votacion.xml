@@ -52,4 +52,19 @@
 
     <include layout="@layout/content_votacion" />
     <include layout="@layout/content_votacion_botones" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabLupa"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:layout_margin="@dimen/fab_margin"
+        android:tint="?attr/colorPrimaryDark"
+        app:backgroundTint="@android:color/white"
+        app:layout_anchor="@+id/app_bar"
+        app:layout_anchorGravity="right|bottom"
+        app:rippleColor="?attr/colorPrimaryDark"
+        app:srcCompat="@android:drawable/ic_menu_zoom"
+        tools:backgroundTint="wi" />
+
 </android.support.design.widget.CoordinatorLayout>

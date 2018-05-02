@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -77,6 +78,11 @@ public class VotacionActivity extends AppCompatActivity {
     private String mAbreviacion;
     private TextView mTextConcejal;
     View decorView;
+    private FloatingActionButton mFabLupa;
+    private String mAntesDelTexto="";
+    private String mDespuesDelTexto="";
+    private String mMargenInferior="";
+    private int mClickLupa=0;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -86,6 +92,7 @@ public class VotacionActivity extends AppCompatActivity {
         mConcejal=intent.getStringExtra("concejal");
         mAbreviacion=intent.getStringExtra("abreviacion");
         mFuncion=intent.getBooleanExtra("funcion",false);
+        mMargenInferior="<br><br><br><br><br><br>";
 
         setContentView(R.layout.activity_votacion);
 //        getWindow().requestFeature(Window.FEATURE_ACTION_BAR);
@@ -325,6 +332,22 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             }
         };
         mMac = getMacAddr();
+
+        mFabLupa = (FloatingActionButton)findViewById(R.id.fabLupa);
+        mFabLupa.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(mClickLupa<3) {
+                    mAntesDelTexto = mAntesDelTexto + "<big>";
+                    mDespuesDelTexto = mDespuesDelTexto + "</big>";
+                    mClickLupa++;
+                } else{
+                    mAntesDelTexto="";
+                    mDespuesDelTexto="";
+                    mClickLupa=0;
+                }
+            }
+        });
     }
 
 
@@ -447,7 +470,9 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 // hide the navigation bar.
                             int uiOptions1 = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                                     | View.SYSTEM_UI_FLAG_FULLSCREEN
-                                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+                                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+                                    | View.SYSTEM_UI_FLAG_IMMERSIVE;
 //                                    | View.SYSTEM_UI_FLAG_LOW_PROFILE;
 
 
@@ -587,8 +612,9 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
             pbarProgreso.setVisibility(View.GONE);
             mTextTimerVotacion.setVisibility(View.GONE);
 
-                Toast.makeText(VotacionActivity.this, "Finalizo el tiempo para votar!", Toast.LENGTH_SHORT).show();
+
             if (result) {
+                Toast.makeText(VotacionActivity.this, "Finalizo el tiempo para votar!", Toast.LENGTH_SHORT).show();
                 votar(VOTO_ABSTENCION);
                 mCancelarVoto.setVisibility(View.GONE);
                 mConfirmaVotoPositivo.setVisibility(View.GONE);
@@ -738,11 +764,13 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 
                                     if (finalIniciaTexto || mTextosInicializados ) { //ingres cuando iniciaTexto es true
                                         mNestedSecrollViewVotacion.setAlpha(1f);
+
                                         collapsingToolbarLayout.setTitle(finalTitulo);
-                                        mTextParrafo.setText(Html.fromHtml(finalTexto));
+                                        mTextParrafo.setText(Html.fromHtml(mAntesDelTexto+ finalTexto+ mDespuesDelTexto+mMargenInferior));
                                     } else {
                                         collapsingToolbarLayout.setTitle(mEsperaTitulo);
-                                        mTextParrafo.setText(mEsperaTexto);
+                                        mTextParrafo.setText(Html.fromHtml(mAntesDelTexto+ mEsperaTexto+ mDespuesDelTexto+mMargenInferior));
+//                                        mTextParrafo.setText(mEsperaTexto);
                                     }
                                     if(finalIniciaTexto){
                                         indicarTextosLeidos();

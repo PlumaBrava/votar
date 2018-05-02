@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:layout_editor_absoluteY="81dp">
-
+    tools:showIn="@layout/activity_votacion">
+    <!--tools:layout_editor_absoluteY="81dp"-->
 
     <ProgressBar
         android:id="@+id/pbarProgreso"
@@ -49,13 +49,13 @@
         android:textSize="30dp"
 
 
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintEnd_toStartOf="parent"
-    app:layout_constraintHorizontal_bias="0.5"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent"
-      />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.451" />
 
     <!--android:background="@drawable/boton_voto"-->
     <!--android:text="result"-->
@@ -69,24 +69,22 @@
     <!--android:backgroundTint="@color/colorVotoNegativo"-->
 
 
-
-
     <Button
         android:id="@+id/VotoNegativo"
         android:layout_width="280dp"
         android:layout_height="80dp"
-        android:textSize="54dp"
-        android:layout_marginBottom="16dp"
-        android:layout_weight="1"
+        android:layout_marginBottom="12dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+
         android:background="@drawable/boton_voto"
-
-
         android:backgroundTint="@color/colorVotoNegativo"
+
         android:text="@string/boton_Voto_Negativo"
 
+        android:textSize="54dp"
         app:layout_constraintBottom_toTopOf="@+id/concejal"
 
-        app:layout_constraintEnd_toStartOf="@+id/VotoPositivo"
         app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintLeft_toLeftOf="parent" />
     <!--android:drawableLeft="@android:drawable/ic_delete"-->
@@ -94,18 +92,21 @@
     <Button
         android:id="@+id/VotoPositivo"
         android:layout_width="280dp"
-        android:layout_height="80dp"
-        android:textSize="54dp"
-        android:layout_marginBottom="16dp"
-        android:layout_weight="3"
+        android:layout_height="76dp"
+        android:layout_marginBottom="12dp"
+
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
         android:background="@drawable/boton_voto"
         android:backgroundTint="@android:color/holo_green_dark"
-
-
         android:text="@string/boton_Voto_Positivo"
+
+        android:textSize="54dp"
 
 
         app:layout_constraintBottom_toTopOf="@+id/concejal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintLeft_toRightOf="@+id/VotoNegativo"
         app:layout_constraintRight_toRightOf="parent" />
 
@@ -113,40 +114,44 @@
         android:id="@+id/confirmaVotoPositivo"
         android:layout_width="280dp"
         android:layout_height="80dp"
-        android:textSize="28dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"
         android:background="@drawable/boton_voto"
         android:backgroundTint="@color/colorVotoPositivo"
         android:paddingHorizontal="16dp"
         android:text="@string/boton_Confirma_Voto_Positivo"
-        app:layout_constraintHorizontal_bias="0.503"
+        android:textSize="28dp"
+        app:layout_constraintBottom_toTopOf="@id/cancelarVoto"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/cancelarVoto" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/confirmaVotoNegativo"
         android:layout_width="280dp"
         android:layout_height="80dp"
-        android:textSize="28dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"
         android:background="@drawable/boton_voto"
         android:backgroundTint="@color/colorVotoNegativo"
         android:paddingHorizontal="16dp"
         android:text="@string/boton_Confirma_Voto_Negativo"
-        app:layout_constraintHorizontal_bias="0.503"
+        android:textSize="28dp"
+        app:layout_constraintBottom_toTopOf="@+id/cancelarVoto"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/cancelarVoto" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/cancelarVoto"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Cancelar"
-        android:textColor="@color/color_Texto"
         android:layout_marginTop="128dp"
         android:background="@drawable/boton_cancelar_voto"
+        android:text="Cancelar"
+        android:textColor="@color/color_Texto"
         app:layout_constraintEnd_toEndOf="@+id/pbarProgreso"
         app:layout_constraintTop_toBottomOf="@+id/pbarProgreso" />
     <!--android:background="@drawable/ic_close_cross"-->
@@ -155,10 +160,11 @@
 
     <TextView
         android:id="@+id/concejal"
-        android:layout_width="305dp"
+        android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:backgroundTint="@color/colorPrimaryDark"
-        android:background="@drawable/boton_voto"
+
+
+        android:background="@color/colorPrimaryDark"
         android:gravity="center"
         android:text="TextView Conc"
         android:textColor="@color/color_Texto"
@@ -166,7 +172,7 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
+
         app:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>
