@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
+//    LoginForzado
 
 
 
@@ -600,11 +600,13 @@ public class MainActivity extends AppCompatActivity {
                         int numeroDispositivo = 0;
                         boolean funcion = false;
 
+
                         while (rs.next()) {
                             rows++;
                             numeroConcejal = rs.getInt("NumConcejal");
                             numeroDispositivo = rs.getInt("NumDispositivo");
                             funcion = rs.getBoolean("Funcion");
+
                         }
 
                         final int finalNumeroConcejal = numeroConcejal;
@@ -987,6 +989,10 @@ public class MainActivity extends AppCompatActivity {
                     int tiempoVotacion= 0;
                     Boolean limpiar = false;
                     Boolean apagar = false;
+                    boolean loginForzado = false;
+
+
+
                     try {
                         while (rs.next()) {
                             row++;
@@ -997,6 +1003,7 @@ public class MainActivity extends AppCompatActivity {
                             tiempoVotacion = rs.getInt("TiempoVotacion");
                             limpiar = rs.getBoolean("Limpiar");
                             apagar = rs.getBoolean("Apagar");
+                            loginForzado = rs.getBoolean("LoginForzado");
                             Log.d(LOG_TAG, " leerBandera success: " + titulo + " - " + texto + " - " + iniciaTexto + " - " + iniciaVoto);
                         }
                         final int finalRow = row;
@@ -1011,6 +1018,8 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
 
                                 if (finalRow == 1) {
+
+                                    
 
                                     if(mButtonSaveNewPassword.getVisibility()== View.VISIBLE){
                                         mButtonIngresar.setVisibility(View.GONE);}

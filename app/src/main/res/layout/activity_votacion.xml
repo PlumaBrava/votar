@@ -67,4 +67,19 @@
         app:srcCompat="@android:drawable/ic_menu_zoom"
         tools:backgroundTint="wi" />
 
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fabPidoLaPalabra"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:layout_marginRight="92dp"
+
+        android:tint="?attr/colorPrimaryDark"
+        app:backgroundTint="@android:color/white"
+        app:layout_anchor="@+id/app_bar"
+        app:layout_anchorGravity="right|bottom"
+        app:rippleColor="?attr/colorPrimaryDark"
+        app:srcCompat="@drawable/ic_levantar_la_mano_para_preguntar"    />
+
+
 </android.support.design.widget.CoordinatorLayout>

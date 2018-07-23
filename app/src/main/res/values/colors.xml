@@ -19,6 +19,7 @@
     <color name="color_ProgressTimer_end">#e9f000</color>
     <color name="color_ProgressTimer_texto">#ea221e</color>
     <color name="color_Texto">#ffffff</color>
+    <color name="color_pidoPalabra">#D80027</color>
 
 
 </resources>

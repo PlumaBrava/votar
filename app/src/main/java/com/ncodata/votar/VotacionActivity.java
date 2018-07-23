@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.RequiresApi;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -56,6 +57,7 @@ public class VotacionActivity extends AppCompatActivity {
     private InspectorBanderas mInspectorBanderas;
     private TextView mTextTimerVotacion;
     private TextView mTextParrafo;
+
     private String mEsperaTitulo;
     private String mEsperaTexto;
     private Button mVotoSeleccionado;
@@ -79,10 +81,14 @@ public class VotacionActivity extends AppCompatActivity {
     private TextView mTextConcejal;
     View decorView;
     private FloatingActionButton mFabLupa;
+    private FloatingActionButton mFabPidoLaPalabra;
     private String mAntesDelTexto="";
     private String mDespuesDelTexto="";
     private String mMargenInferior="";
     private int mClickLupa=0;
+    private boolean mPidoLaPalabra=false;
+    private TextView mTextTieneLaPalabra;
+    private  ResultSet mListadoConcejales;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -115,6 +121,7 @@ public class VotacionActivity extends AppCompatActivity {
         mIconoBaseConectada = (ImageView) findViewById(R.id.inconoBaseConectada);
         mIconoBaseDesonectada = (ImageView) findViewById(R.id.inconoBaseDesonectada);
         mTextConcejal=(TextView)findViewById(R.id.concejal);
+        mTextTieneLaPalabra=(TextView)findViewById(R.id.tieneLaPalabra);
         mTextConcejal.setText(mAbreviacion);
 
         mNestedSecrollViewVotacion = (NestedScrollView) findViewById(R.id.nestedSecrollViewVotacion);
@@ -346,6 +353,17 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     mDespuesDelTexto="";
                     mClickLupa=0;
                 }
+            }
+        });
+
+        mFabPidoLaPalabra = (FloatingActionButton)findViewById(R.id.fabPidoLaPalabra);
+        mFabPidoLaPalabra.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                    pidoLaPabra(!mPidoLaPalabra);
+
+
             }
         });
     }
@@ -723,6 +741,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     int tiempoVotacion= 0;
                     Boolean limpiar = false;
                     Boolean apagar = false;
+                    Boolean pPalabra = false;
                     try {
                         while (rs.next()) {
                             row++;
@@ -734,6 +753,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                             funcion = rs.getBoolean("Funcion");
                             limpiar = rs.getBoolean("Limpiar");
                             apagar = rs.getBoolean("Apagar");
+                            pPalabra = rs.getBoolean("PidePalabra");
                             Log.d(LOG_TAG, " leerBandera success: " + titulo + " - " + texto + " - " + iniciaTexto + " - " + iniciaVoto);
                         }
                         final int finalRow = row;
@@ -745,8 +765,21 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                         final int finaltiempoVotacion =  tiempoVotacion;
                         final Boolean finalLimpiar =  limpiar;
                         final Boolean finalApagar =  apagar;
+                        final Boolean finalpPalabra =  pPalabra;
                         runOnUiThread(new Runnable() {
                             public void run() {
+                                mPidoLaPalabra=finalpPalabra;
+                                if(mFuncion){
+                                    buscarConcejalTieneLaPalabra();
+                                }
+                                if(mPidoLaPalabra){
+                                    mFabPidoLaPalabra.setColorFilter(ContextCompat.getColor(getApplicationContext(),R.color.color_pidoPalabra));
+
+
+                                }else{
+                                    mFabPidoLaPalabra.setColorFilter(ContextCompat.getColor(getApplicationContext(),R.color.colorPrimaryDark));
+
+                                }
                                 if (finalRow == 1) {
                                     Log.d(LOG_TAG, " abreviacion mAbreviacion"+ mAbreviacion);
                                     if(finalFuncion){
@@ -779,7 +812,7 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                                         mNestedSecrollViewVotacion.scrollTo(0, 0);
                                         mNestedSecrollViewVotacion.stopNestedScroll();
                                         mNestedSecrollViewVotacion.setAlpha(0.5f);
-
+                                        mTextTieneLaPalabra.setVisibility(View.GONE);
 
                                         mTiempoVotacion=finaltiempoVotacion;
                                         if (mTareaTimer == null && !mActualizandoDatosTimerVoto) {
@@ -1104,6 +1137,64 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
 
     }
 
+    public void pidoLaPabra(boolean pidePalabra) {
+
+        Log.d(LOG_TAG, " pidoLaPabra:");
+        if (conn != null) {
+            Log.d(LOG_TAG, " votar-connection:" + conn.toString());
+            PreparedStatement pst = null;
+            try {
+                pst = conn.prepareStatement("UPDATE age_Sesiones "
+                        + " SET PidePalabra= ? "
+                        + "WHERE  Macaddresses='" + mMac + "' and Habilitado= ? ");
+
+
+                pst.setBoolean(1, pidePalabra);
+                pst.setBoolean(2,true);// Habilitado en Verdadero
+
+                UpdateBD updateBD = new UpdateBD();
+                UpdateBD.OnUpdateResult onUpDateResult;
+                onUpDateResult = new UpdateBD.OnUpdateResult() {
+                    @Override
+                    public void onResultSuccess(int cantidadLineasModificadas) {
+                        Log.d(LOG_TAG, "  votar: success: " + cantidadLineasModificadas);
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                mPidoLaPalabra=!mPidoLaPalabra;
+
+
+
+                            }
+                        });
+
+                    }
+
+                    @Override
+                    public void onResultFail(String errorMessage) {
+                        Log.d(LOG_TAG, "  votar: onResultFail: " + errorMessage);
+                    }
+                };
+                updateBD.setOnResultListener(onUpDateResult);
+                ;
+                if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                    updateBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, pst);
+                } else {
+                    updateBD.execute(pst);
+                }
+
+                Log.d(LOG_TAG, "votar  pst.executeUpdate:");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+
+        } else {
+            Log.d(LOG_TAG, " votar error sin Conexion ");
+
+        }
+
+    }
+
     public void sacarConcejalEnSesionbkp() {
 
         Log.d(LOG_TAG, " sacarConcejalEnSesion:");
@@ -1336,7 +1427,105 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
         mVotoSeleccionado.setVisibility(View.GONE);
         collapsingToolbarLayout.setTitle("");
         mTextParrafo.setText("");
+        mTextTieneLaPalabra.setText("");
+        mTextTieneLaPalabra.setVisibility(View.GONE);
         indicarLimpiarLeido();
     }
+
+  // Trae el Nombre del concejal que en la tabla de sesiones tiene un 2 (es quien tiene la palabra)
+    // Solo se muestra en la tablet del presidente por eso se consulta por mFuncion- Este dato viene de Main Ac
+
+    public void buscarConcejalTieneLaPalabra(){
+
+
+        if (conn != null) {
+
+            String mac = getMacAddr();
+
+//            String stsql = "Select * FROM age_Sesiones where  PidePalabra='" + 2 + "' and Habilitado = 1 ";
+
+            //            /En el stsql se puede agregar cualquier consulta SQL deseada.
+            String stsql = "Select *, age_Concejales.NumConcejal, age_Concejales.Concejal as NombreConcejal, age_Concejales.Abreviacion as Abreviacion FROM age_Sesiones "
+                    +
+                    "INNER JOIN age_Concejales ON age_Concejales.NumConcejal= age_Sesiones.NumConcejal "
+                    +
+                    " where  PidePalabra='" + 2 + "' and Habilitado = 1 "
+                    ;
+
+
+
+            QueryBD.QueryData queryData = new QueryBD.QueryData(conn, stsql);
+            QueryBD queryBD = new QueryBD();
+            QueryBD.OnQueryResult onQueryResult;
+            onQueryResult = new QueryBD.OnQueryResult() {
+                @Override
+                public void onResultSuccess(final ResultSet rs) {
+                    Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra query success: " + rs);
+
+
+                    int row = 0;
+
+                    String listaConcejales="";
+                    try {
+
+                        while (rs.next()) {
+                            row++;
+
+                            Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra NumConcejal: " + rs.getInt("NumConcejal"));
+                            Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra PidePalabra: " + rs.getInt("PidePalabra"));
+                            Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra Abreviacion: " + rs.getString("Abreviacion"));
+                            Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra NombreConcejal: " + rs.getString("NombreConcejal"));
+
+                            listaConcejales=listaConcejales+ rs.getString("NombreConcejal")+"\n";
+
+                        }
+
+                        final String finalListaConcejales = listaConcejales;
+                        final int finalRow = row;
+
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                if(finalRow>=1) {
+                                    mTextTieneLaPalabra.setText("Tiene la Palabra\n\n" + finalListaConcejales);
+                                    mTextTieneLaPalabra.setVisibility(View.VISIBLE);
+                                } else {
+                                    mTextTieneLaPalabra.setText("");
+                                    mTextTieneLaPalabra.setVisibility(View.GONE);
+                                }
+                            }
+                        });
+
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onResultFail(String errorMessage) {
+                    Log.d(LOG_TAG, "buscarConcejalTieneLaPalabra executeUpdate onResultFail: " + errorMessage);
+                }
+            };
+            queryBD.setOnResultListener(onQueryResult);
+
+            if (Build.VERSION.SDK_INT >= 11/*HONEYCOMB*/) {
+                queryBD.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, queryData);
+            } else {
+                queryBD.execute(queryData);
+            }
+            Log.d(LOG_TAG, " buscarConcejalTieneLaPalabra: qwuery");
+
+
+        } else {
+
+            Log.d(LOG_TAG, " buscarConcejalTieneLaPalabra: sin conexion a la base");
+        }
+    }
+
+
+
+
+
 
 }
