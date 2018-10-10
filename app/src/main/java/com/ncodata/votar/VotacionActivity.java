@@ -1344,7 +1344,8 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     PreparedStatement pst = conn.prepareStatement("update age_Sesiones"
                             + " SET Estado = ? , "
                             + "  Apagar = ? , "
-                            + "  Habilitado = ? "
+                            + "  Habilitado = ? , "
+                            + "  LoginForzado = ? "
                             + " WHERE  Macaddresses = ? ");
 
 
@@ -1354,8 +1355,9 @@ mCancelarVoto.setOnClickListener(new View.OnClickListener() {
                     pst.setBoolean(1, false);//Estado
                     pst.setBoolean(2, false);//Apagar
                     pst.setBoolean(3, false);//Habilitado
+                    pst.setBoolean(4, false);//HLoginForzado
 
-                    pst.setString(4, getMacAddr());//iniciaVoto
+                    pst.setString(5, getMacAddr());//iniciaVoto
                     Log.d(LOG_TAG, " sacarConcejalEnSesion-connection update:");
 
                     UpdateBD updateBD = new UpdateBD();

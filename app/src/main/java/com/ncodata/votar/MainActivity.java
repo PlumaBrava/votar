@@ -990,6 +990,9 @@ public class MainActivity extends AppCompatActivity {
                     Boolean limpiar = false;
                     Boolean apagar = false;
                     boolean loginForzado = false;
+                    int numeroConcejal= 0;
+                    int numeroDispositivo= 0;
+                    Boolean funcion= false;
 
 
 
@@ -1004,6 +1007,12 @@ public class MainActivity extends AppCompatActivity {
                             limpiar = rs.getBoolean("Limpiar");
                             apagar = rs.getBoolean("Apagar");
                             loginForzado = rs.getBoolean("LoginForzado");
+                            numeroConcejal= rs.getInt("NumConcejal");
+                            numeroDispositivo= rs.getInt("NumDispositivo");
+                            funcion= rs.getBoolean("Funcion");
+
+
+
                             Log.d(LOG_TAG, " leerBandera success: " + titulo + " - " + texto + " - " + iniciaTexto + " - " + iniciaVoto);
                         }
                         final int finalRow = row;
@@ -1014,6 +1023,11 @@ public class MainActivity extends AppCompatActivity {
                         final int finaltiempoVotacion =  tiempoVotacion;
                         final Boolean finalLimpiar =  limpiar;
                         final Boolean finalApagar =  apagar;
+                        final Boolean finalLoginForzado =  loginForzado;
+                        final int finalNumeroConcejal= numeroConcejal;
+                        final int finalNumeroDispositivo = numeroDispositivo;
+                        final Boolean finalFuncion=funcion;
+
                         runOnUiThread(new Runnable() {
                             public void run() {
 
@@ -1044,6 +1058,11 @@ public class MainActivity extends AppCompatActivity {
 
                                 }
                                     if(finalApagar){   }
+                                    if(finalLoginForzado){
+                                        ingresaConcejalEnSesion(finalNumeroConcejal, finalNumeroDispositivo, finalFuncion, getMacAddr());
+                                    }
+
+
                         }});
 
                     } catch (SQLException e) {
